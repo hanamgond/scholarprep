@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { api } from '../../api/client'; // 👈 Step 1: Import the central API client
 
 // --- Type Definitions ---
-// In a real app, move these to a shared types file
 interface SectionDetails {
   id: string;
   name: string;
@@ -10,21 +10,11 @@ interface SectionDetails {
     id: string;
     name: string;
   };
-  // We can add more details like student list later
 }
-
-// --- API Helper ---
-const api = {
-  getSectionDetails: async (sectionId: string): Promise<SectionDetails> => {
-    const response = await fetch(`http://localhost:3000/sections/${sectionId}`);
-    if (!response.ok) throw new Error('Failed to fetch section details');
-    return response.json();
-  },
-};
 
 // --- The Main Component ---
 export default function SectionsPage() {
-  const { id } = useParams<{ id: string }>(); // Gets the section ID from the URL
+  const { id } = useParams<{ id: string }>();
   const [section, setSection] = useState<SectionDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +30,11 @@ export default function SectionsPage() {
     const loadSectionData = async () => {
       try {
         setIsLoading(true);
-        const data = await api.getSectionDetails(id);
-        setSection(data);
+        // 👇 Step 2: Use the new api client to make the request
+        const response = await api.get<SectionDetails>(`/sections/${id}`);
+        setSection(response.data); // Axios provides the data in the .data property
       } catch (err) {
-        setError('Could not load section data. Please ensure the backend is running and the ID is correct.');
+        setError('Could not load section data. The API request failed.');
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -51,7 +42,7 @@ export default function SectionsPage() {
     };
 
     loadSectionData();
-  }, [id]); // Re-run this effect if the ID in the URL changes
+  }, [id]);
 
   if (isLoading) return <div className="p-6">Loading Section Details...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
@@ -88,7 +79,6 @@ export default function SectionsPage() {
         ))}
       </div>
       
-      {/* Display content based on the active tab */}
       <div className="tab-content">
         {activeTab === 'overview' && (
           <div className="card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -102,7 +92,6 @@ export default function SectionsPage() {
             <p className="text-slate-600">A dynamic list of students assigned to this section will be displayed here.</p>
           </div>
         )}
-        {/* Add content for other tabs here */}
       </div>
     </main>
   );

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { Student } from '../../types/student';
+import { api } from '../../api/client';
 
 // --- Type Definitions for this component ---
 interface Section { id: string; name: string; }
 interface Class { id:string; name: string; sections: Section[]; }
 
-// Define the shape of the data the form will submit
 type StudentFormData = {
   first_name: string;
   last_name: string;
@@ -14,35 +14,12 @@ type StudentFormData = {
   tenant_id: string;
   academic_year_id: string;
   school_id: string;
-  // Add other fields from your finalized schema here if needed
   [key: string]: unknown;
 };
 
-// Define the component's props for type safety
 interface AddStudentModalProps {
   onClose: () => void;
   onSuccess: (newStudent: Student) => void;
-}
-
-// --- API Helper ---
-const api = {
-  getClasses: async (): Promise<Class[]> => {
-    const response = await fetch('http://localhost:3000/classes');
-    if (!response.ok) throw new Error('Failed to fetch classes');
-    return response.json();
-  },
-  addStudent: async (payload: StudentFormData): Promise<Student> => {
-    const response = await fetch('http://localhost:3000/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || 'Failed to create student');
-    }
-    return response.json();
-  }
 }
 
 // --- The Modal Component ---
@@ -61,10 +38,16 @@ export default function AddStudentModal({ onClose, onSuccess }: AddStudentModalP
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getClasses().then(setAllClasses).catch(err => {
-      console.error(err);
-      setError("Could not load classes. Make sure the backend is running.");
-    });
+    const loadClasses = async () => {
+        try {
+            const response = await api.get<Class[]>('/classes');
+            setAllClasses(response.data);
+        } catch (err) {
+            console.error(err);
+            setError("Could not load classes. Make sure the backend is running.");
+        }
+    };
+    loadClasses();
   }, []);
 
   useEffect(() => {
@@ -86,15 +69,23 @@ export default function AddStudentModal({ onClose, onSuccess }: AddStudentModalP
     setLoading(true);
     setError(null);
     try {
-      const newStudent = await api.addStudent(formData as StudentFormData);
+      const response = await api.post<Student>('/students', formData as StudentFormData);
+      const newStudent = response.data;
+      
       onSuccess(newStudent);
       onClose();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred.');
+    } catch (err) { // The 'any' type is removed here
+      // This is a safer way to handle unknown error types
+      let message = 'An unknown error occurred.';
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const responseData = (err as { response?: { data?: { message?: string } } }).response?.data;
+        if (responseData && typeof responseData.message === 'string') {
+          message = responseData.message;
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
       }
+      setError(message);
     } finally {
       setLoading(false);
     }

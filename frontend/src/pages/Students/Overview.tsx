@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mapStudentToListItem, type Student, type StudentListItem } from '../../types/student';
+import { api } from '../../api/client'; // 👈 Step 1: Import the central API client
 
 // --- Helper Components for this page ---
 function StatCard({ title, value, icon }: { title: string, value: string | number, icon: string }) {
@@ -36,8 +37,9 @@ export default function Overview() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const studentsRes = await fetch('http://localhost:3000/students');
-        const backendStudents: Student[] = await studentsRes.json();
+        // 👇 Step 2: Use the new api client
+        const response = await api.get<Student[]>('/students');
+        const backendStudents: Student[] = response.data; // Axios puts the response body in .data
         setStudents(backendStudents.map(mapStudentToListItem));
       } catch (error) {
         console.error('Failed to fetch data:', error);

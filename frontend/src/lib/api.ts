@@ -1,7 +1,9 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  // Use a relative path for production (for the Vercel proxy) 
+  // and the localhost URL for local development.
+  baseURL: import.meta.env.PROD ? '/api' : 'http://localhost:3000',
   timeout: 15_000,
 });
 

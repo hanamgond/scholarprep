@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../api/client';
 
 // --- Type Definitions ---
 interface Section { id: string; name: string; }
 interface Class { id: string; name: string; sections: Section[]; }
-interface Student { id: string; first_name: string; }
+// The 'Student' type was removed as it was not being used in this file.
 
-// FIX 1: Define a precise interface for the form data instead of using `unknown`.
-// This is the core fix for the TypeScript error.
 interface StudentFormData {
   tenant_id: string;
   school_id: string;
@@ -15,7 +14,7 @@ interface StudentFormData {
   first_name: string;
   last_name: string;
   dob: string;
-  gender: 'Male' | 'Female' | 'Other' | ''; // Using a union type for better safety
+  gender: 'Male' | 'Female' | 'Other' | '';
   email: string;
   mobile_number: string;
   father_name: string;
@@ -25,31 +24,6 @@ interface StudentFormData {
   section_id: string;
 }
 
-
-// --- API Helper ---
-const api = {
-  getClasses: async (): Promise<Class[]> => {
-    const response = await fetch('http://localhost:3000/classes');
-    if (!response.ok) throw new Error('Failed to fetch classes');
-    const data = await response.json();
-    return Array.isArray(data) ? data : []; // Ensure it returns an array
-  },
-  addStudent: async (payload: StudentFormData): Promise<Student> => {
-    const response = await fetch('http://localhost:3000/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-        const err = await response.json();
-        // Use a more specific error message from the backend if available
-        throw new Error(err.message || 'Failed to create student. Please check the details and try again.');
-    }
-    return response.json();
-  }
-};
-
-
 // --- The Page Component ---
 export default function AddStudentPage() {
   const navigate = useNavigate();
@@ -57,7 +31,6 @@ export default function AddStudentPage() {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [availableSections, setAvailableSections] = useState<Section[]>([]);
   
-  // FIX 2: Use the new, precise interface for the component's state.
   const [formData, setFormData] = useState<StudentFormData>({
     tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p', 
     school_id: 'scl-11223344-5566-7788-9900-aabbccddeeff',
@@ -79,10 +52,16 @@ export default function AddStudentPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getClasses().then(setAllClasses).catch(err => {
-      console.error(err);
-      setError('Could not load class data. Please refresh the page.');
-    });
+    const loadClasses = async () => {
+      try {
+        const response = await api.get<Class[]>('/classes');
+        setAllClasses(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        console.error(err);
+        setError('Could not load class data. Please refresh the page.');
+      }
+    };
+    loadClasses();
   }, []);
 
   useEffect(() => {
@@ -104,21 +83,26 @@ export default function AddStudentPage() {
     setLoading(true);
     setError(null);
     try {
-      // FIX 3: The type assertion `as StudentFormData` is no longer needed
-      // because the state is now correctly typed from the start.
-      await api.addStudent(formData);
-      // Replace alert with a more modern notification if possible (e.g., a toast)
+      await api.post('/students', formData);
       alert('Student created successfully!');
       navigate('/students/overview');
-    } catch (err) {
-      if (err instanceof Error) { setError(err.message); }
-      else { setError('An unexpected error occurred.'); }
+    } catch (err) { // The 'any' type is removed here
+      // This is a safer way to handle unknown error types
+      let message = 'An unknown error occurred.';
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const responseData = (err as { response?: { data?: { message?: string } } }).response?.data;
+        if (responseData && typeof responseData.message === 'string') {
+          message = responseData.message;
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Improved styles for better UI feedback
   const inputStyles = "w-full rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition";
   const disabledStyles = "disabled:bg-slate-100 disabled:cursor-not-allowed";
 

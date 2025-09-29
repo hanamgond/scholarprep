@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { api } from '../../api/client';
 
 // --- Type Definitions ---
 interface Section { id: string; name: string; }
@@ -15,15 +16,19 @@ export default function BulkCreatePage() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Fetch classes for the dropdown
   useEffect(() => {
-    fetch('http://localhost:3000/classes')
-      .then(res => res.json())
-      .then(setAllClasses)
-      .catch(console.error);
+    const loadClasses = async () => {
+      try {
+        const response = await api.get<Class[]>('/classes');
+        setAllClasses(response.data);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load class data.');
+      }
+    };
+    loadClasses();
   }, []);
   
-  // Update section options when class changes
   useEffect(() => {
     const selectedClass = allClasses.find(c => c.id === selectedClassId);
     setAvailableSections(selectedClass ? selectedClass.sections : []);
@@ -52,20 +57,19 @@ export default function BulkCreatePage() {
     formData.append('academic_year_id', 'acy-2025-2026');
 
     try {
-      const response = await fetch('http://localhost:3000/students/bulk-create', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      setResult(data.message);
-    } catch (err) {
-      // ✅ Safely handle the unknown error type
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred.');
+      const response = await api.post('/students/bulk-create', formData);
+      setResult(response.data.message);
+    } catch (err) { // The 'any' type is removed here
+      let message = 'An unknown error occurred.';
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const responseData = (err as { response?: { data?: { message?: string } } }).response?.data;
+        if (responseData && typeof responseData.message === 'string') {
+          message = responseData.message;
+        }
+      } else if (err instanceof Error) {
+        message = err.message;
       }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -92,7 +96,7 @@ export default function BulkCreatePage() {
         </div>
         
         <div className="text-right">
-          <a href="http://localhost:3000/students/bulk-template" className="text-sm text-indigo-600 hover:underline">Download CSV Template</a>
+          <a href="/api/students/bulk-template" className="text-sm text-indigo-600 hover:underline">Download CSV Template</a>
         </div>
         
         <button type="submit" disabled={loading} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg">

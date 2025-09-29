@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomDropdown from '../../components/ui/CustomDropdown';
+import { api } from '../../api/client'; // 👈 Step 1: Import the central API client
 
 // --- Type Definitions ---
 interface Section {
@@ -15,57 +16,10 @@ interface Class {
   avgAccuracy: number;
 }
 
-// --- API Helper (remains the same) ---
-const api = {
-  getClasses: async (): Promise<Class[]> => {
-    const response = await fetch('http://localhost:3000/classes');
-    if (!response.ok) throw new Error('Failed to fetch classes');
-    return response.json();
-  },
-  addClass: async (payload: { name: string }): Promise<Class> => {
-    const fullPayload = {
-      ...payload,
-      tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
-      school_id: 'scl-11223344-5566-7788-9900-aabbccddeeff',
-      academic_year_id: 'acy-2025-2026',
-    };
-    const response = await fetch('http://localhost:3000/classes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fullPayload),
-    });
-    if (!response.ok) throw new Error('Failed to create class');
-    return response.json();
-  },
-  updateClass: async (id: string, payload: { name: string }): Promise<Class> => {
-    const response = await fetch(`http://localhost:3000/classes/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error('Failed to update class');
-    return response.json();
-  },
-  addSection: async (name: string, classId: string): Promise<Section> => {
-    const payload = {
-      name,
-      class_id: classId,
-      tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
-    };
-    const response = await fetch('http://localhost:3000/sections', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error('Failed to create section');
-    return response.json();
-  },
-};
-
 // --- The Main Component ---
 export default function ClassesPage() {
   const navigate = useNavigate();
-  const [allClasses, setAllClasses] = useState<Class[]>([]); // Holds the original, unfiltered list
+  const [allClasses, setAllClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeClassId, setActiveClassId] = useState<string | null>(null);
@@ -84,13 +38,16 @@ export default function ClassesPage() {
   const [classFilter, setClassFilter] = useState('');
   const [sectionFilter, setSectionFilter] = useState('');
   const [teacherFilter, setTeacherFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState(''); // ✅ State for the search input
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await api.getClasses();
-        setAllClasses(data); // Set the original list
+        // 👇 Step 2: Use the new api client
+        const response = await api.get<Class[]>('/classes');
+        const data = response.data; // Axios puts the response body in .data
+
+        setAllClasses(data);
         if (data.length > 0) setActiveClassId(data[0].id);
 
         const uniqueClassNames = [...new Set(data.map(c => c.name))];
@@ -108,19 +65,14 @@ export default function ClassesPage() {
     loadData();
   }, []);
 
-  // ✅ Memoized filtering logic
   const filteredClasses = useMemo(() => {
     let classesToFilter = [...allClasses];
-
-    // Apply dropdown filters
     if (classFilter) {
       classesToFilter = classesToFilter.filter(c => c.name === classFilter);
     }
     if (sectionFilter) {
       classesToFilter = classesToFilter.filter(c => c.sections.some(s => s.name === sectionFilter));
     }
-    
-    // Apply search term filter
     if (searchTerm.trim() !== '') {
       const lowercasedSearch = searchTerm.toLowerCase();
       classesToFilter = classesToFilter.filter(c => 
@@ -128,7 +80,6 @@ export default function ClassesPage() {
         c.sections.some(s => s.name.toLowerCase().includes(lowercasedSearch))
       );
     }
-
     return classesToFilter;
   }, [allClasses, classFilter, sectionFilter, searchTerm]);
   
@@ -139,7 +90,6 @@ export default function ClassesPage() {
       setSearchTerm('');
   };
 
-  // --- Event Handlers (handleAddClass, handleUpdateClass, etc. remain the same) ---
   const handleToggleAccordion = (classId: string) => {
     setActiveClassId(activeClassId === classId ? null : classId);
   };
@@ -148,7 +98,16 @@ export default function ClassesPage() {
     e.preventDefault();
     if (!newClassName.trim()) return;
     try {
-      const newClass = await api.addClass({ name: newClassName });
+      const fullPayload = {
+        name: newClassName,
+        tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
+        school_id: 'scl-11223344-5566-7788-9900-aabbccddeeff',
+        academic_year_id: 'acy-2025-2026',
+      };
+      // 👇 Step 2: Use the new api client
+      const response = await api.post<Class>('/classes', fullPayload);
+      const newClass = response.data;
+
       setAllClasses([...allClasses, { ...newClass, studentCount: 0, avgAccuracy: 0, sections: [] }]);
       setNewClassName('');
       setModal(null);
@@ -166,7 +125,10 @@ export default function ClassesPage() {
     e.preventDefault();
     if (!editingClass || !editingClass.name.trim()) return;
     try {
-      const updatedClass = await api.updateClass(editingClass.id, { name: editingClass.name });
+      // 👇 Step 2: Use the new api client
+      const response = await api.patch<Class>(`/classes/${editingClass.id}`, { name: editingClass.name });
+      const updatedClass = response.data;
+
       setAllClasses(allClasses.map(c => c.id === editingClass.id ? { ...c, name: updatedClass.name } : c));
       setEditingClass(null);
       setModal(null);
@@ -179,7 +141,15 @@ export default function ClassesPage() {
     e.preventDefault();
     if (!newSectionName.trim() || !activeClassId) return;
     try {
-      const newSection = await api.addSection(newSectionName, activeClassId);
+      const payload = {
+        name: newSectionName,
+        class_id: activeClassId,
+        tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
+      };
+      // 👇 Step 2: Use the new api client
+      const response = await api.post<Section>('/sections', payload);
+      const newSection = response.data;
+
       setAllClasses(allClasses.map(cls => cls.id === activeClassId ? { ...cls, sections: [...cls.sections, newSection] } : cls));
       setNewSectionName('');
       setModal(null);
@@ -243,10 +213,8 @@ export default function ClassesPage() {
         </div>
 
         <ul className="divide-y divide-slate-200">
-          {/* ✅ Render the filtered list */}
           {filteredClasses.map((cls) => (
             <li key={cls.id}>
-              {/* The rest of the rendering logic remains the same */}
               <div
                 className={`px-6 py-4 hover:bg-indigo-50/40 transition cursor-pointer flex justify-between items-center ${activeClassId === cls.id ? 'bg-indigo-100/60' : ''}`}
                 onClick={() => handleToggleAccordion(cls.id)}
@@ -288,7 +256,7 @@ export default function ClassesPage() {
         </ul>
       </div>
 
-      {/* All the modals (Add Class, Edit Class, Add Section) remain the same */}
+      {/* Modals */}
       {modal === 'addClass' && (
         <div className="modal fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="modal-content bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
