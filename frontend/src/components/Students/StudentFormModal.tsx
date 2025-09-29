@@ -1,10 +1,12 @@
+// src/components/Students/StudentFormModal.tsx
+
 import { useEffect, useMemo, useState } from "react";
-import type { Student, CreateStudentInput, UpdateStudentInput } from "../../types/student";
+import type { CreateStudentInput, UpdateStudentInput } from "../../types/student";
 
 type Props = {
   open: boolean;
   mode?: "create" | "edit";
-  initial?: Partial<Student>;
+  initial?: Partial<CreateStudentInput>;
   error?: string; // top-level error from parent (optional)
   onClose: () => void;
   onSubmit: (payload: CreateStudentInput | UpdateStudentInput) => Promise<void> | void;
@@ -45,6 +47,7 @@ export default function StudentFormModal({
   const emptyForm = useMemo<CreateStudentInput>(
     () => ({
       name: "",
+      admission_no: "", // Added missing field
       rollNumber: "",
       className: "",
       section: "",
@@ -74,6 +77,7 @@ export default function StudentFormModal({
     if (initial && mode === "edit") {
       setForm({
         name: initial.name ?? "",
+        admission_no: initial.admission_no ?? "", // Added missing field
         rollNumber: initial.rollNumber ?? "",
         className: initial.className ?? "",
         section: initial.section ?? "",
@@ -88,14 +92,14 @@ export default function StudentFormModal({
     } else {
       setForm(emptyForm);
     }
-  }, [initial, mode, open, emptyForm]); // emptyForm is stable thanks to useMemo
+  }, [initial, mode, open, emptyForm]);
 
   if (!open) return null;
 
   // Strongly-typed field setter
   function setField<K extends keyof CreateStudentInput>(key: K, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setFieldErrors((prev) => ({ ...prev, [key]: undefined })); // clear field error on change
+    setForm((prev: CreateStudentInput) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
   // Map backend duplicate errors to specific fields (email/rollNumber)
@@ -109,7 +113,6 @@ export default function StudentFormModal({
     if (/email/i.test(msg)) fe.email = "Email already exists";
     setFieldErrors(fe);
 
-    // Only show top banner if nothing mapped to a field
     if (!fe.rollNumber && !fe.email) setTopError(msg);
     else setTopError(undefined);
   }
@@ -120,9 +123,9 @@ export default function StudentFormModal({
     setTopError(undefined);
     setFieldErrors({});
     try {
-      // Send only allowed fields (avoid id/status/admissionDate)
       const payload: CreateStudentInput | UpdateStudentInput = {
         name: form.name,
+        admission_no: form.admission_no, // Added missing field
         rollNumber: form.rollNumber,
         className: form.className,
         section: form.section,
@@ -137,7 +140,7 @@ export default function StudentFormModal({
       await onSubmit(payload);
     } catch (err: unknown) {
       parseAndSetErrors(getErrMessage(err));
-      return; // keep modal open
+      return;
     } finally {
       setSubmitting(false);
     }
@@ -161,6 +164,13 @@ export default function StudentFormModal({
             <label className={label}>Name*</label>
             <input className={input} value={form.name} onChange={(e) => setField("name", e.target.value)} required />
             {fieldErrors.name && <div className={err}>{fieldErrors.name}</div>}
+          </div>
+
+          {/* Added new input field for Admission Number */}
+          <div>
+            <label className={label}>Admission Number*</label>
+            <input className={input} value={form.admission_no} onChange={(e) => setField("admission_no", e.target.value)} required />
+            {fieldErrors.admission_no && <div className={err}>{fieldErrors.admission_no}</div>}
           </div>
 
           <div>

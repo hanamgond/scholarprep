@@ -1,17 +1,20 @@
-// The rich object returned by your backend's findAll method
+// src/types/student.ts
+
+// The main, complete Student object from the database
 export interface Student {
   id: string;
-  first_name: string;
-  last_name?: string;
-  admission_no: string;
-  enrollments: {
-    section: {
-      name: string;
-      class: {
-        name: string;
-      };
-    };
-  }[];
+  name: string;
+  admission_no: string; // Added this property
+  rollNumber: string;
+  className: string;
+  section: string;
+  dob: string;
+  fatherName: string;
+  motherName: string;
+  contactNumber: string;
+  email: string;
+  address: string;
+  gender: string;
   // --- Simulated properties from the backend service ---
   track: string;
   rank: number;
@@ -25,22 +28,32 @@ export interface Student {
   };
 }
 
-// The UI-specific version of the type
-export type StudentListItem = Student & {
-  name: string;
+// A smaller version of the Student for UI lists
+export type StudentListItem = Pick<Student, 'id' | 'name' | 'admission_no' | 'rollNumber' | 'className' | 'section' | 'track' | 'rank' | 'metrics'> & {
   avatarUrl: string;
-  className: string;
-  sectionName: string;
+  sectionName: string; // Added this property
 };
 
-// This function now maps all the rich data correctly
+// Type for creating a new student (all fields from the form)
+export type CreateStudentInput = Omit<Student, 'id' | 'track' | 'rank' | 'metrics'>;
+
+// Type for updating an existing student (can have a subset of fields)
+export type UpdateStudentInput = Partial<CreateStudentInput>;
+
+
+// Helper function to map the full Student object to the list item version
 export function mapStudentToListItem(student: Student): StudentListItem {
-  const currentEnrollment = student.enrollments?.[0];
   return {
-    ...student,
-    name: `${student.first_name} ${student.last_name || ''}`.trim(),
-    className: currentEnrollment?.section?.class?.name ?? 'N/A',
-    sectionName: currentEnrollment?.section?.name ?? 'N/A',
+    id: student.id,
+    name: student.name,
+    admission_no: student.admission_no,
+    rollNumber: student.rollNumber,
+    className: student.className,
+    section: student.section,
+    sectionName: student.section, // Added mapping for sectionName
+    track: student.track,
+    rank: student.rank,           // Added mapping for rank
+    metrics: student.metrics,
     avatarUrl: `https://i.pravatar.cc/48?u=${student.id}`,
   };
 }

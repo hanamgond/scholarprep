@@ -1,5 +1,5 @@
 // src/pages/Students/students.utils.ts
-import type { StudentListItem } from "../../types/student"; // ✅ use shared type
+import type { StudentListItem } from "../../types/student";
 
 export const classes = ["", "9", "10", "11 (PUC I)", "12 (PUC II)"] as const;
 export const sections = ["", "A", "B", "C", "D"] as const;
@@ -31,7 +31,6 @@ export function applyFilters(students: StudentListItem[], f: Filters) {
 
   return students.filter((s) => {
     if (f.classFilter && !s.className.includes(f.classFilter)) return false;
-    // section is optional on StudentListItem; compare safely
     if (f.sectionFilter && (s.section ?? "") !== f.sectionFilter) return false;
     if (f.trackFilter && s.track !== f.trackFilter) return false;
     if (s.metrics.accuracyPct < minPerf || s.metrics.accuracyPct > maxPerf) return false;

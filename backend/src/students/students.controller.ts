@@ -15,7 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
-import type { Response } from 'express';
+import express from 'express';
 
 @Controller('students')
 export class StudentsController {
@@ -27,7 +27,7 @@ export class StudentsController {
   }
 
   @Get('bulk-template')
-  getBulkCreateTemplate(@Res() res: Response) {
+  getBulkCreateTemplate(@Res() res: express.Response) {
     const csvString =
       'first_name,last_name,email,gender,dob,mobile_number,password';
     res.setHeader('Content-Type', 'text/csv');
