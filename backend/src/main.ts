@@ -1,3 +1,5 @@
+// backend/src/main.ts
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -25,6 +27,9 @@ async function bootstrap() {
     }),
   );
 
+  // 👇 ADD THIS LINE to make all routes start with /api
+  app.setGlobalPrefix('api');
+
   const config = new DocumentBuilder()
     .setTitle('ScholarPrep API')
     .setDescription('API documentation for ScholarPrep')
@@ -32,7 +37,8 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  // 👇 UPDATE THIS LINE to reflect the new prefix
+  SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(PORT);
 }
