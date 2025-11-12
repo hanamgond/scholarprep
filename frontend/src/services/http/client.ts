@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// Use the correct backend URL - your backend runs on port 3000 with /api prefix
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Use the correct backend URL - your new .NET backend runs on port 5168
+// The old URL was: 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5168';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

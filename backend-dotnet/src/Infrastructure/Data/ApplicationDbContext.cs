@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using ScholarPrep.Shared.Interfaces; // 👈 FIX: Changed from 'ScholarPrep.Application.Common.Interfaces'
 using ScholarPrep.Domain.Common;
 using ScholarPrep.Domain.Entities;
 using ScholarPrep.Infrastructure.Interceptors;
 
 namespace ScholarPrep.Infrastructure.Data;
 
-public class ApplicationDbContext : DbContext
+// This class definition will now work because the correct 'using' statement is above
+public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     private readonly TenantInterceptor _tenantInterceptor;
     
@@ -37,7 +39,6 @@ public class ApplicationDbContext : DbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // Set UpdatedAt for modified entities
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
             if (entry.State == EntityState.Modified)

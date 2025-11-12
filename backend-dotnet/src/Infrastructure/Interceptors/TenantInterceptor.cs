@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using ScholarPrep.Domain.Common;
-using ScholarPrep.Infrastructure.Security;
+using ScholarPrep.Shared.Interfaces;
 
 namespace ScholarPrep.Infrastructure.Interceptors;
 

@@ -1,4 +1,8 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ScholarPrep.Application.Students.Commands;
+using ScholarPrep.Application.Students.DTOs;
+using ScholarPrep.Application.Students.Queries;
 
 namespace ScholarPrep.API.Controllers;
 
@@ -6,60 +10,95 @@ namespace ScholarPrep.API.Controllers;
 [Route("api/[controller]")]
 public class StudentsController : ControllerBase
 {
+    private readonly IMediator _mediator;
     private readonly ILogger<StudentsController> _logger;
 
-    public StudentsController(ILogger<StudentsController> logger)
+    public StudentsController(IMediator mediator, ILogger<StudentsController> logger)
     {
+        _mediator = mediator;
         _logger = logger;
     }
 
     [HttpGet]
-    public IActionResult GetStudents()
+    public async Task<ActionResult<List<StudentDto>>> GetStudents()
     {
         _logger.LogInformation("Getting all students");
-        return Ok(new { 
-            message = "Students API is working!",
-            timestamp = DateTime.UtcNow,
-            status = "API is ready for development",
-            version = "1.0"
-        });
+        var students = await _mediator.Send(new GetStudentsQuery());
+        return Ok(students);
     }
 
     [HttpGet("{id:guid}")]
-    public IActionResult GetStudent(Guid id)
+    public async Task<ActionResult<StudentDto>> GetStudent(Guid id)
     {
         _logger.LogInformation("Getting student with ID: {StudentId}", id);
-        return Ok(new { 
-            id = id,
-            firstName = "John",
-            lastName = "Doe",
-            admissionNo = "SP2024001",
-            email = "john.doe@example.com"
-        });
+        var student = await _mediator.Send(new GetStudentByIdQuery(id));
+        
+        if (student == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(student);
     }
 
     [HttpPost]
-    public IActionResult CreateStudent([FromBody] CreateStudentRequest request)
+    public async Task<ActionResult<StudentDto>> CreateStudent([FromBody] CreateStudentDto createStudentDto)
     {
-        _logger.LogInformation("Creating new student: {FirstName} {LastName}", request.FirstName, request.LastName);
-        
-        var student = new
+        _logger.LogInformation("Creating new student: {FirstName} {LastName}", 
+            createStudentDto.FirstName, createStudentDto.LastName);
+
+        var command = new CreateStudentCommand
         {
-            id = Guid.NewGuid(),
-            firstName = request.FirstName,
-            lastName = request.LastName,
-            email = request.Email,
-            admissionNo = $"SP{DateTime.UtcNow:yyyyMMddHHmmss}",
-            createdAt = DateTime.UtcNow
+            FirstName = createStudentDto.FirstName,
+            LastName = createStudentDto.LastName,
+            Email = createStudentDto.Email,
+            Phone = createStudentDto.Phone,
+            DateOfBirth = createStudentDto.DateOfBirth,
+            CampusId = createStudentDto.CampusId
         };
 
-        return CreatedAtAction(nameof(GetStudent), new { id = student.id }, student);
+        var student = await _mediator.Send(command);
+        return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
     }
-}
 
-public class CreateStudentRequest
-{
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<StudentDto>> UpdateStudent(Guid id, [FromBody] UpdateStudentDto updateStudentDto)
+    {
+        _logger.LogInformation("Updating student with ID: {StudentId}", id);
+
+        var command = new UpdateStudentCommand
+        {
+            Id = id,
+            FirstName = updateStudentDto.FirstName,
+            LastName = updateStudentDto.LastName,
+            Email = updateStudentDto.Email,
+            Phone = updateStudentDto.Phone,
+            DateOfBirth = updateStudentDto.DateOfBirth,
+            CampusId = updateStudentDto.CampusId
+        };
+
+        var student = await _mediator.Send(command);
+        
+        if (student == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(student);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<ActionResult> DeleteStudent(Guid id)
+    {
+        _logger.LogInformation("Deleting student with ID: {StudentId}", id);
+        
+        var result = await _mediator.Send(new DeleteStudentCommand(id));
+        
+        if (!result)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
 }

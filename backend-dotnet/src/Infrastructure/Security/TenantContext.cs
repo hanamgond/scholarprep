@@ -1,13 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using ScholarPrep.Shared.Interfaces;
 
 namespace ScholarPrep.Infrastructure.Security;
-
-public interface ITenantContext
-{
-    Guid TenantId { get; }
-    string TenantName { get; }
-}
 
 public class TenantContext : ITenantContext
 {

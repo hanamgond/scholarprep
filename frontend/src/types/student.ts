@@ -1,24 +1,37 @@
 // src/types/student.ts
 
-// The main, complete Student object from the database
+// The main, complete Student object
 export interface Student {
+  // --- Fields from your NEW .NET Backend ---
   id: string;
-  name: string;
-  admission_no: string; // Added this property
-  rollNumber: string;
-  className: string;
-  section: string;
-  dob: string;
-  fatherName: string;
-  motherName: string;
-  contactNumber: string;
+  firstName: string;   // NEW field
+  lastName: string;    // NEW field
+  admissionNo: string; // Was 'admission_no'
   email: string;
-  address: string;
-  gender: string;
-  // --- Simulated properties from the backend service ---
-  track: string;
-  rank: number;
-  metrics: {
+  phone: string;       // Was 'contactNumber'
+  dateOfBirth: string; // Was 'dob'
+  campusId: string;    // NEW field
+  campusName: string;  // NEW field
+  createdAt: string;   // NEW field
+  updatedAt: string;   // NEW field
+
+  // --- Fields from your OLD Frontend (now optional) ---
+  name?: string;
+  rollNumber?: string;
+  className?: string;
+  section?: string;
+  fatherName?: string;
+  motherName?: string;
+  contactNumber?: string;
+  address?: string;
+  gender?: string;
+  dob?: string;
+  admission_no?: string; // Kept this old one just in case
+
+  // --- Simulated properties (now optional) ---
+  track?: string;
+  rank?: number;
+  metrics?: {
     accuracyPct: number;
     accuracyDelta: number;
     qpm: number;
@@ -29,31 +42,26 @@ export interface Student {
 }
 
 // A smaller version of the Student for UI lists
-export type StudentListItem = Pick<Student, 'id' | 'name' | 'admission_no' | 'rollNumber' | 'className' | 'section' | 'track' | 'rank' | 'metrics'> & {
+// We will update this to use the new fields
+export type StudentListItem = Pick<Student, 'id' | 'firstName' | 'lastName' | 'admissionNo' | 'rollNumber' | 'className' | 'section' | 'track' | 'rank' | 'metrics'> & {
   avatarUrl: string;
-  sectionName: string; // Added this property
+  sectionName?: string; 
 };
 
-// Type for creating a new student (all fields from the form)
+// We will leave these for now
 export type CreateStudentInput = Omit<Student, 'id' | 'track' | 'rank' | 'metrics'>;
-
-// Type for updating an existing student (can have a subset of fields)
 export type UpdateStudentInput = Partial<CreateStudentInput>;
 
 
-// Helper function to map the full Student object to the list item version
+// Helper function to map the full Student object
+// This function will BREAK because 'name' doesn't exist on the new object.
+// We will fix this in the component itself.
+/*
 export function mapStudentToListItem(student: Student): StudentListItem {
   return {
     id: student.id,
-    name: student.name,
-    admission_no: student.admission_no,
-    rollNumber: student.rollNumber,
-    className: student.className,
-    section: student.section,
-    sectionName: student.section, // Added mapping for sectionName
-    track: student.track,
-    rank: student.rank,           // Added mapping for rank
-    metrics: student.metrics,
-    avatarUrl: `https://i.pravatar.cc/48?u=${student.id}`,
+    name: student.name, // This will fail
+    // ...
   };
 }
+*/

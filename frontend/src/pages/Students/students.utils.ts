@@ -1,5 +1,5 @@
-// src/pages/Students/students.utils.ts
-import type { StudentListItem } from "../../types/student";
+// We import the 'Student' type which is what our API service will return
+import type { Student } from "../../types/student";
 
 export const classes = ["", "9", "10", "11 (PUC I)", "12 (PUC II)"] as const;
 export const sections = ["", "A", "B", "C", "D"] as const;
@@ -25,22 +25,33 @@ export function perfRangeForLabel(label: Filters["perfLabel"]) {
   return perfLevels.find((p) => p.label === label)?.range ?? [0, 100];
 }
 
-export function applyFilters(students: StudentListItem[], f: Filters) {
-  const [minPerf, maxPerf] = perfRangeForLabel(f.perfLabel);
+// We update this function to filter on 'Student' objects from the new API
+export function applyFilters(students: Student[], f: Filters) {
+  // const [minPerf, maxPerf] = perfRangeForLabel(f.perfLabel); // Hidden
   const q = f.search.trim().toLowerCase();
 
   return students.filter((s) => {
-    if (f.classFilter && !s.className.includes(f.classFilter)) return false;
-    if (f.sectionFilter && (s.section ?? "") !== f.sectionFilter) return false;
-    if (f.trackFilter && s.track !== f.trackFilter) return false;
-    if (s.metrics.accuracyPct < minPerf || s.metrics.accuracyPct > maxPerf) return false;
+    // --- FILTERS TEMPORARILY DISABLED ---
+    // These properties don't exist on the new backend object,
+    // so we "hide" this functionality for now to prevent a crash.
 
-    if (
-      q &&
-      !(s.name.toLowerCase().includes(q) || s.rollNumber.toLowerCase().includes(q))
-    ) {
-      return false;
+    // if (f.classFilter && s.className && !s.className.includes(f.classFilter)) return false;
+    // if (f.sectionFilter && (s.section ?? "") !== f.sectionFilter) return false;
+    // if (f.trackFilter && s.track && s.track !== f.trackFilter) return false;
+    // if (s.metrics && (s.metrics.accuracyPct < minPerf || s.metrics.accuracyPct > maxPerf)) return false;
+
+    // --- SEARCH LOGIC UPDATED ---
+    // We update this to search by the new fields: firstName, lastName, and admissionNo
+    if (q) {
+      const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
+      if (
+        !fullName.includes(q) &&
+        !s.admissionNo.toLowerCase().includes(q)
+      ) {
+        return false;
+      }
     }
+    
     return true;
   });
 }

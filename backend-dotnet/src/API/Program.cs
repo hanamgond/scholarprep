@@ -1,20 +1,28 @@
-using ScholarPrep.Application;
+using ScholarPrep.Application; 
 using ScholarPrep.Infrastructure;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+// 👇 PASTE THIS SECTION NEAR THE TOP
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScholarPrep API", Version = "v1" });
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy  =>
+                      {
+                          // This is your frontend's address
+                          policy.WithOrigins("http://localhost:3000") 
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                      });
 });
 
-// Add our custom services
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+// Add services to the container.
+builder.Services.AddControllers();
+// ... (rest of your services)
+builder.Services.AddApplication(); 
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 var app = builder.Build();
 
@@ -26,7 +34,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 👇 PASTE THIS LINE HERE (before UseAuthorization)
+app.UseCors(MyAllowSpecificOrigins);
+
 app.UseAuthorization();
 app.MapControllers();
-
 app.Run();
