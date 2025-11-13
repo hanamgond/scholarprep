@@ -1,101 +1,64 @@
-// src/features/students/services/students.ts
-
 import { apiClient } from '@/services/http/client';
-// ✅ Import ALL types from the single source of truth
-import {
-  type Student,
-  type StudentListItem,
-  type StudentMetrics,
-  type StudentCreatePayload
-} from '@/features/students/types/student';
+// 1. This import is now correct
+import type { Student, StudentListItem, StudentCreatePayload } from '../types/student';
 
-// ❌ All type/interface definitions are GONE from this file.
-
-// ✅ UPDATED: Map backend data to UI format (with mock metrics)
+/**
+ * 2. THIS FUNCTION WAS MISSING
+ * This "translator" function takes the backend 'Student' object
+ * and converts it into the 'StudentListItem' object that your
+ * UI components (like Overview.tsx) expect.
+ */
 export function mapStudentToListItem(student: Student): StudentListItem {
-  const currentEnrollment = student.enrollments?.[0];
-
-  // --- MOCK DATA ---
-  const mockRank = Math.floor(Math.random() * 50) + 1;
-  const mockMetrics: StudentMetrics = {
-    accuracyPct: Math.floor(Math.random() * 20) + 80,
-    accuracyDelta: Math.floor(Math.random() * 10) - 5,
-    qpm: Math.floor(Math.random() * 5) + 1,
-    qpmDelta: Math.floor(Math.random() * 20) - 10,
-    consistencyPct: Math.floor(Math.random() * 20) + 75,
-    consistencyDelta: Math.floor(Math.random() * 10) - 5,
-  };
-  // --- END MOCK DATA ---
-
   return {
-    ...student,
-    name: `${student.first_name} ${student.last_name || ''}`.trim(),
-    className: currentEnrollment?.section?.class?.name ?? 'N/A',
-    sectionName: currentEnrollment?.section?.name ?? 'N/A',
-    avatarUrl: `https://i.pravatar.cc/48?u=${student.id}`,
-    track: 'Default Track', // Placeholder
-    rank: mockRank,         // Placeholder
-    metrics: mockMetrics,   // Placeholder
+    // Direct Mappings
+    id: student.id,
+    admission_no: student.admissionNo,
+
+    // Transformed/Created Data
+    name: `${student.firstName} ${student.lastName}`,
+    avatarUrl: `https://i.pravatar.cc/48?u=${student.id}`, // Generates a placeholder avatar
+
+    // "Hidden" Data (set to defaults)
+    // Your UI expects these, but the new API doesn't have them yet.
+    className: "Class TBD", // Placeholder
+    sectionName: "Section TBD", // Placeholder
+    track: "Track TBD", // Placeholder
+    rank: 0,
+    metrics: {
+      accuracyPct: 0,
+      accuracyDelta: 0,
+      qpm: 0,
+      qpmDelta: 0,
+      consistencyPct: 0,
+      consistencyDelta: 0,
+    },
   };
 }
 
-// Real API service functions
+
+// This service object holds all your student-related API calls
 export const studentsService = {
-  // Get all students for current tenant
-  async getAll(): Promise<Student[]> {
-    const response = await apiClient.get<Student[]>('/students');
-    return response.data;
+  
+  getAll: async (): Promise<Student[]> => {
+    try {
+      const { data } = await apiClient.get<Student[]>('/api/Students');
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+      throw error;
+    }
   },
 
-  // Get student by ID
-  async getById(id: string): Promise<Student> {
-    const response = await apiClient.get<Student>(`/students/${id}`);
-    return response.data;
+  create: async (studentData: StudentCreatePayload): Promise<Student> => {
+    try {
+      // Calls: POST http://localhost:5168/api/Students
+      const { data } = await apiClient.post<Student>('/api/Students', studentData);
+      return data;
+    } catch (error) {
+      console.error('Failed to create student:', error);
+      throw error;
+    }
   },
-
-  // ✅ UPDATED: Create new student (using the correct type)
-  async create(studentData: StudentCreatePayload): Promise<Student> {
-    const response = await apiClient.post<Student>('/students', studentData);
-    return response.data;
-  },
-
-  // Update student
-  async update(id: string, studentData: Partial<Student>): Promise<Student> {
-    const response = await apiClient.patch<Student>(`/students/${id}`, studentData);
-    return response.data;
-  },
-
-  // Delete student (soft delete)
-  async delete(id: string): Promise<void> {
-    await apiClient.delete(`/students/${id}`);
-  },
-
-  // Bulk create students
-  async bulkCreate(file: File, sectionId: string, academicYearId: string): Promise<Student[]> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('section_id', sectionId);
-    formData.append('academic_year_id', academicYearId);
-
-    const response = await apiClient.post<Student[]>('/students/bulk-create', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-
-  // Get dashboard metrics
-  async getDashboardMetrics() {
-    const response = await apiClient.get('/students/dashboard/metrics');
-    return response.data;
-  },
-
-  // Get bulk template
-  async getBulkTemplate() {
-    const response = await apiClient.get('/students/bulk-template', {
-      responseType: 'blob'
-    });
-    return response.data;
-  }
+  
+  // ... other methods like getById, update, delete will go here
 };

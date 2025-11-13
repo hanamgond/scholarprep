@@ -1,7 +1,8 @@
-// frontend/src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react'; // 1. ADD 'useContext'
 import { authService } from '../features/auth/services/auth';
+import { jwtDecode } from 'jwt-decode';
 
+// This interface should match the decoded token
 interface User {
   id: string;
   email: string;
@@ -9,6 +10,14 @@ interface User {
   campusId?: string;
   role: string;
   permissions: string[];
+}
+
+// 2. ADDED: This interface belongs here
+interface DecodedToken {
+  email: string;
+  userId: string;
+  tenantId: string;
+  exp: number;
 }
 
 interface AuthContextType {
@@ -24,6 +33,35 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// ... (The 'handleAuthToken' helper function is correct) ...
+const handleAuthToken = (token: string): User | null => {
+  try {
+    const decoded = jwtDecode<DecodedToken>(token);
+    
+    if (decoded.exp * 1000 < Date.now()) {
+      localStorage.removeItem('accessToken');
+      return null;
+    }
+    
+    localStorage.setItem('accessToken', token);
+    
+    const user: User = {
+      id: decoded.userId,
+      email: decoded.email,
+      tenantId: decoded.tenantId,
+      role: 'Admin', // TODO: Add role to your JWT claims
+      permissions: [], // TODO: Add permissions to your JWT claims
+    };
+    return user;
+
+  } catch (error) {
+    console.error('Invalid token:', error);
+    localStorage.removeItem('accessToken');
+    return null;
+  }
+};
+
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,17 +69,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     checkAuthStatus();
   }, []);
-
-  const checkAuthStatus = async () => {
+  
+  // ... (The 'checkAuthStatus', 'login', and 'logout' functions are all correct) ...
+  
+  const checkAuthStatus = () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
+        const user = handleAuthToken(token);
+        setUser(user);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('accessToken');
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -50,12 +90,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { user: userData, accessToken } = await authService.login(email, password);
-      localStorage.setItem('accessToken', accessToken);
-      setUser(userData);
+      const { accessToken } = await authService.login(email, password); 
+      const user = handleAuthToken(accessToken); 
+      setUser(user);
     } catch (error) {
       console.error('Login failed:', error);
-      throw error; // Re-throw to handle in UI
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('accessToken');
     setUser(null);
   };
+
 
   const value: AuthContextType = {
     user,
@@ -80,11 +121,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
+// 3. FIX: Restore the 'useAuth' hook implementation
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
+  const context = useContext(AuthContext); // This uses 'useContext'
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+  return context; // This returns the context
 };

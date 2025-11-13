@@ -1,5 +1,3 @@
-// src/features/students/pages/Overview.tsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -25,24 +23,40 @@ function StatCard({ title, value, icon }: { title: string, value: string | numbe
     );
 }
 
-// REMOVED: Unused Metric component since the metrics section is commented out
-
 // --- Main Overview Component ---
 export default function Overview() {
   const navigate = useNavigate();
   const [students, setStudents] = useState<StudentListItem[]>([]);
+  const [loading, setLoading] = useState(true); // Added loading state
+  const [error, setError] = useState<string | null>(null); // Added error state
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        // 1. This service call now hits your .NET backend
         const backendStudents: Student[] = await studentsService.getAll();
+        
+        // 2. This mapper function now correctly translates the data
         setStudents(backendStudents.map(mapStudentToListItem));
       } catch (error) {
         console.error('Failed to fetch data:', error);
+        setError('Failed to load students. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
     loadData();
   }, []);
+
+  if (loading) {
+    return <div>Loading students...</div>; // Or your <Spinner />
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>; // Or your <Alert />
+  }
 
   return (
     <div className="space-y-6">
@@ -69,25 +83,22 @@ export default function Overview() {
               <div className="flex flex-wrap items-center gap-4">
                 <img src={s.avatarUrl} alt={s.name} className="w-12 h-12 rounded-full" />
                 <div className="flex-1 min-w-[300px]">
+                  {/* These fields will now work correctly! */}
                   <div className="font-semibold flex items-center gap-2">
-                    <span>{s.name}</span>
-                    <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">{s.admission_no}</span>
+                    <span>{s.name}</span> {/* This is now "FirstName LastName" */}
+                    <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">{s.admission_no}</span> {/* Mapped from admissionNo */}
                   </div>
                   <div className="text-sm text-slate-600 mt-1 flex gap-4">
-                    <span>🎓 {s.className} - {s.sectionName}</span>
-                    
-                    {/* ⚠️ TODO: Add 'track' and 'rank' to StudentListItem type
-                    <span>🎯 {s.track}</span>
-                    <span>⭐ Rank: {s.rank}</span>
-                    */}
+                    <span>🎓 {s.className} - {s.sectionName}</span> {/* Shows "Class TBD" */}
+                    <span>🎯 {s.track}</span> {/* Shows "Track TBD" */}
                   </div>
                 </div>
+                
+                {/* Metrics section is hidden for now as planned.
+                  The data is '0' so it won't crash if you re-enable it.
+                */}
                 <div className="flex gap-8 min-w-[320px]">
-                  {/* ⚠️ TODO: Add 'metrics' to StudentListItem type
-                  <Metric label="Accuracy" value={`${s.metrics.accuracyPct}%`} delta={s.metrics.accuracyDelta} />
-                  <Metric label="Q/Min" value={`${s.metrics.qpm}`} delta={s.metrics.qpmDelta} />
-                  <Metric label="Consistency" value={`${s.metrics.consistencyPct}%`} delta={s.metrics.consistencyDelta} />
-                  */}
+                  {/* <Metric label="Accuracy" value={`${s.metrics.accuracyPct}%`} /> ... */}
                 </div>
               </div>
             </li>

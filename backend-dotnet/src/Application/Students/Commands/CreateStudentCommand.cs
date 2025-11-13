@@ -6,6 +6,7 @@ using ScholarPrep.Shared.Interfaces;
 
 namespace ScholarPrep.Application.Students.Commands;
 
+// 1. UPDATE THE COMMAND TO MATCH YOUR FORM
 public record CreateStudentCommand : IRequest<StudentDto>
 {
     public string FirstName { get; init; } = string.Empty;
@@ -14,6 +15,15 @@ public record CreateStudentCommand : IRequest<StudentDto>
     public string Phone { get; init; } = string.Empty;
     public DateOnly DateOfBirth { get; init; }
     public Guid CampusId { get; init; }
+    
+    // --- ADD ALL THE NEW FIELDS ---
+    public string? RollNumber { get; init; }
+    public string? Gender { get; init; }
+    public string? FatherName { get; init; }
+    public string? FatherMobile { get; init; }
+    public string? MotherName { get; init; }
+    public string? MotherMobile { get; init; }
+    public string? Address { get; init; }
 }
 
 public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand, StudentDto>
@@ -29,6 +39,7 @@ public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand,
 
     public async Task<StudentDto> Handle(CreateStudentCommand request, CancellationToken cancellationToken)
     {
+        // 2. MAP THE NEW FIELDS TO THE ENTITY
         var student = new Student
         {
             FirstName = request.FirstName,
@@ -38,7 +49,16 @@ public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand,
             DateOfBirth = request.DateOfBirth,
             CampusId = request.CampusId,
             TenantId = _tenantContext.TenantId,
-            AdmissionNo = GenerateAdmissionNo()
+            AdmissionNo = GenerateAdmissionNo(),
+            
+            // --- ADD THE MAPPINGS ---
+            RollNumber = request.RollNumber,
+            Gender = request.Gender,
+            FatherName = request.FatherName,
+            FatherMobile = request.FatherMobile,
+            MotherName = request.MotherName,
+            MotherMobile = request.MotherMobile,
+            Address = request.Address
         };
 
         _context.Students.Add(student);
@@ -62,6 +82,8 @@ public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand,
             CampusName = campus?.Name ?? string.Empty,
             CreatedAt = student.CreatedAt,
             UpdatedAt = student.UpdatedAt
+            // Note: You can add the new fields to StudentDto as well
+            // if you want them returned to the frontend right after creation.
         };
     }
 

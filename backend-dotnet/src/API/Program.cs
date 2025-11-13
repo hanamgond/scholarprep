@@ -12,7 +12,7 @@ builder.Services.AddCors(options =>
                       policy  =>
                       {
                           // This is your frontend's address
-                          policy.WithOrigins("http://localhost:3000") 
+                          policy.WithOrigins("http://localhost:5173") 
                                 .AllowAnyHeader()
                                 .AllowAnyMethod();
                       });
@@ -21,6 +21,13 @@ builder.Services.AddCors(options =>
 // Add services to the container.
 builder.Services.AddControllers();
 // ... (rest of your services)
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScholarPrep API", Version = "v1" });
+});
+
 builder.Services.AddApplication(); 
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
@@ -33,7 +40,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // 👇 PASTE THIS LINE HERE (before UseAuthorization)
 app.UseCors(MyAllowSpecificOrigins);

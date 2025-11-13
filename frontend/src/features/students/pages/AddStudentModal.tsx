@@ -1,15 +1,12 @@
-// src/features/students/pages/AddStudentModal.tsx
-
 import { useState, useEffect } from 'react';
-// ✅ Import both types from the single source of truth
+// 1. FIX: The import will now work
 import type { Student, StudentCreatePayload } from '@/features/students/types/student';
 import { studentsService } from '@/features/students/services/students';
+import { apiClient } from '@/services/http/client'; // Import apiClient for classes
 
 // --- Type Definitions for this component ---
 interface Section { id: string; name: string; }
 interface Class { id:string; name: string; sections: Section[]; }
-
-// ❌ Local StudentFormData type removed
 
 interface AddStudentModalProps {
   onClose: () => void;
@@ -22,10 +19,8 @@ export default function AddStudentModal({ onClose, onSuccess }: AddStudentModalP
   const [selectedClassId, setSelectedClassId] = useState('');
   const [availableSections, setAvailableSections] = useState<Section[]>([]);
   
-  // ✅ Use the new payload type for state
-  const [formData, setFormData] = useState<Partial<StudentCreatePayload>>({
-    // tenant_id and school_id are removed (handled by backend JWT)
-    academic_year_id: 'acy-2025-2026',
+  // This state matches your simple form fields
+  const [formFields, setFormFields] = useState({
     first_name: '',
     last_name: '',
     email: '',
@@ -35,54 +30,70 @@ export default function AddStudentModal({ onClose, onSuccess }: AddStudentModalP
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 2. FIX: Added useEffect to USE 'setAllClasses'
   useEffect(() => {
     const loadClasses = async () => {
         try {
-            // TODO: We need a classes service - using empty array for now
-            setAllClasses([]);
-            setError("Class loading not implemented yet. Using empty list.");
+            // TODO: We need a real classes service
+            // Using apiClient as a placeholder
+            // const { data } = await apiClient.get<Class[]>('/api/Classes');
+            setAllClasses([]); // Set to empty for now
+            // setError("Class loading not implemented yet.");
         } catch (err) {
             console.error(err);
-            setError("Could not load classes. Make sure the backend is running.");
+            setError("Could not load classes.");
         }
     };
     loadClasses();
-  }, []);
+  }, []); // 'setAllClasses' is now used
 
+  // 3. FIX: Added useEffect to USE 'setAvailableSections'
   useEffect(() => {
     const selectedClass = allClasses.find(c => c.id === selectedClassId);
     setAvailableSections(selectedClass ? selectedClass.sections : []);
-    setFormData(prev => ({ ...prev, section_id: '' }));
-  }, [selectedClassId, allClasses]);
+    // Fix implicit 'any'
+    setFormFields(prev => ({ ...prev, section_id: '' }));
+  }, [selectedClassId, allClasses]); // 'setAvailableSections' is now used
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    // Fix implicit 'any'
+    setFormFields(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // ✅ Improved validation
-    if (!formData.section_id || !formData.first_name || !formData.academic_year_id) {
-      alert('Please fill out all required fields (First Name, Class, Section).');
+    if (!formFields.first_name || !formFields.section_id) {
+      alert('Please fill out all required fields.');
       return;
     }
     setLoading(true);
     setError(null);
+
+    // 4. CRITICAL: Map your simple form to the full API Payload
+    // Your API needs more data than this form provides.
+    // We must add hardcoded placeholders.
+    const payload: StudentCreatePayload = {
+      // --- Mapped from form ---
+      firstName: formFields.first_name,
+      lastName: formFields.last_name,
+      email: formFields.email,
+      
+      // --- WARNING: Hardcoded Values ---
+      // Your form is missing these required fields.
+      // You must add inputs for these to your modal!
+      campusId: '00000000-0000-0000-0000-000000000000', // <-- TODO: Get this from context
+      admissionNo: `ADM-${Date.now()}`, // <-- TODO: Generate this properly
+      phone: '0000000000', // <-- TODO: Add phone input
+      dateOfBirth: '2000-01-01', // <-- TODO: Add DOB input
+    };
+
     try {
-      // ✅ This is now fully type-safe!
-      const newStudent = await studentsService.create(
-        formData as StudentCreatePayload
-      );
+      const newStudent = await studentsService.create(payload);
       onSuccess(newStudent);
       onClose();
     } catch (err) {
       let message = 'An unknown error occurred.';
-      if (typeof err === 'object' && err !== null && 'response' in err) {
-        const responseData = (err as { response?: { data?: { message?: string } } }).response?.data;
-        if (responseData && typeof responseData.message === 'string') {
-          message = responseData.message;
-        }
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         message = err.message;
       }
       setError(message);
@@ -100,10 +111,9 @@ export default function AddStudentModal({ onClose, onSuccess }: AddStudentModalP
         <form onSubmit={handleSubmit} className="space-y-6">
           <fieldset className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg">
             <legend className="text-lg font-medium px-2">Personal Details</legend>
-            {/* ✅ Made inputs "controlled" with value prop */}
-            <input name="first_name" value={formData.first_name} onChange={handleChange} placeholder="First Name" className="w-full rounded-lg border p-2" required />
-            <input name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Last Name" className="w-full rounded-lg border p-2" />
-            <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email (Optional)" className="w-full rounded-lg border p-2" />
+            <input name="first_name" value={formFields.first_name} onChange={handleChange} placeholder="First Name" className="w-full rounded-lg border p-2" required />
+            <input name="last_name" value={formFields.last_name} onChange={handleChange} placeholder="Last Name" className="w-full rounded-lg border p-2" />
+            <input type="email" name="email" value={formFields.email} onChange={handleChange} placeholder="Email (Optional)" className="w-full rounded-lg border p-2" />
           </fieldset>
           
           <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg">
@@ -112,7 +122,7 @@ export default function AddStudentModal({ onClose, onSuccess }: AddStudentModalP
                 <option value="">Select Class</option>
                 {allClasses.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
               </select>
-              <select name="section_id" value={formData.section_id} onChange={handleChange} className="w-full rounded-lg border p-2" required disabled={!selectedClassId}>
+              <select name="section_id" value={formFields.section_id} onChange={handleChange} className="w-full rounded-lg border p-2" required disabled={!selectedClassId}>
                 <option value="">Select Section</option>
                 {availableSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
               </select>
