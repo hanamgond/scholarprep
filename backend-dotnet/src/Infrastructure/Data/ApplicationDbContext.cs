@@ -1,12 +1,12 @@
+// src/Infrastructure/Data/ApplicationDbContext.cs
 using Microsoft.EntityFrameworkCore;
-using ScholarPrep.Shared.Interfaces; // 👈 FIX: Changed from 'ScholarPrep.Application.Common.Interfaces'
+using ScholarPrep.Shared.Interfaces;
 using ScholarPrep.Domain.Common;
 using ScholarPrep.Domain.Entities;
 using ScholarPrep.Infrastructure.Interceptors;
 
 namespace ScholarPrep.Infrastructure.Data;
 
-// This class definition will now work because the correct 'using' statement is above
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     private readonly TenantInterceptor _tenantInterceptor;
@@ -21,9 +21,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Campus> Campuses => Set<Campus>();
     public DbSet<Student> Students => Set<Student>();
-    public DbSet<Class> Classes => Set<Class>();
-    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<User> Users => Set<User>();
+    
+    // Corrected List:
+    public DbSet<Class> Classes => Set<Class>();
+    public DbSet<Section> Sections => Set<Section>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

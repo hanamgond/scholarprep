@@ -6,31 +6,23 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  user: {
-    id: string;
-    email: string;
-    tenantId: string;
-    campusId?: string;
-    role: string;
-    permissions: string[];
-  };
   accessToken: string;
 }
 
+// REMOVED: Unused 'DecodedToken' interface.
+// It will be moved to AuthContext.tsx where it's actually used.
+
 class AuthService {
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>('/auth/login', {
+    const response = await apiClient.post<LoginResponse>('/api/auth/login', {
       email,
       password,
     });
     return response.data;
   }
 
-  async getCurrentUser() {
-    const response = await apiClient.get('/auth/me');
-    return response.data;
-  }
-
+  // REMOVED: Unused 'register' stub to fix linting errors.
+  /*
   async register(userData: {
     email: string;
     password: string;
@@ -41,6 +33,7 @@ class AuthService {
     const response = await apiClient.post('/auth/register', userData);
     return response.data;
   }
+  */
 }
 
 export const authService = new AuthService();

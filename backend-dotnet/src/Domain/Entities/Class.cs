@@ -12,5 +12,6 @@ public class Class : BaseEntity, ITenantEntity
     // Navigation properties
     public virtual Campus Campus { get; set; } = null!;
     public virtual Tenant Tenant { get; set; } = null!;
+    public virtual ICollection<Section> Sections { get; set; } = new List<Section>();
     public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 }

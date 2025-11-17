@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentsService } from '@/features/students/services/students';
+import type { StudentCreatePayload } from '@/features/students/types/student';
+// 👇 1. IMPORT THE NEW SERVICE AND TYPE
+import { classService, type Class } from '@/services/api/class'; 
 
 // --- Type Definitions ---
 interface Section { id: string; name: string; }
-interface Class { id: string; name: string; sections: Section[]; }
+// We can now use the imported 'Class' type, which includes the 'sections' array
+// interface Class { id: string; name: string; sections: Section[]; }
 
+// This is your form's internal state. It's perfectly fine.
 interface StudentFormData {
   tenant_id: string;
   school_id: string;
@@ -31,6 +36,7 @@ export default function AddStudentPage() {
   const [availableSections, setAvailableSections] = useState<Section[]>([]);
   
   const [formData, setFormData] = useState<StudentFormData>({
+    // ... (your form's default state is fine) ...
     tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p', 
     school_id: 'scl-11223344-5566-7788-9900-aabbccddeeff',
     academic_year_id: 'acy-2025-2026',
@@ -50,22 +56,23 @@ export default function AddStudentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 👇 2. THIS IS THE FIX
   useEffect(() => {
     const loadClasses = async () => {
       try {
-        // TODO: We need to get classes from a classes service
-        // For now, let's use a temporary empty array
-        setAllClasses([]);
-        setError('Class loading not implemented yet');
+        setError(null); // Clear the "not implemented" error
+        const classes = await classService.getClasses();
+        setAllClasses(classes);
       } catch (err) {
         console.error(err);
         setError('Could not load class data. Please refresh the page.');
       }
     };
     loadClasses();
-  }, []);
+  }, []); // This runs once on page load
 
   useEffect(() => {
+    // This will now work, since our Class DTO includes the sections
     const selectedClass = allClasses.find(c => c.id === selectedClassId);
     setAvailableSections(selectedClass ? selectedClass.sections : []);
     setFormData(prev => ({ ...prev, section_id: '' }));
@@ -83,19 +90,28 @@ export default function AddStudentPage() {
     }
     setLoading(true);
     setError(null);
+
+    // This mapping logic is correct from our previous step
+    const payload: StudentCreatePayload = {
+      firstName: formData.first_name,
+      lastName: formData.last_name,
+      email: formData.email,
+      phone: formData.mobile_number,
+      dateOfBirth: formData.dob,
+      gender: formData.gender || undefined,
+      fatherName: formData.father_name || undefined,
+      motherName: formData.mother_name || undefined,
+      campusId: '00000000-0000-0000-0000-000000000000', // TODO: Get from context
+      admissionNo: `ADM-${Date.now()}`, // TODO: Get from form
+    };
+
     try {
-      // ✅ FIXED: Use the existing 'create' method
-      await studentsService.create(formData);
+      await studentsService.create(payload);
       alert('Student created successfully!');
       navigate('/students/overview');
     } catch (err) {
       let message = 'An unknown error occurred.';
-      if (typeof err === 'object' && err !== null && 'response' in err) {
-        const responseData = (err as { response?: { data?: { message?: string } } }).response?.data;
-        if (responseData && typeof responseData.message === 'string') {
-          message = responseData.message;
-        }
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         message = err.message;
       }
       setError(message);
@@ -104,6 +120,7 @@ export default function AddStudentPage() {
     }
   };
 
+  // ... (Your JSX and <form> remain exactly the same) ...
   const inputStyles = "w-full rounded-lg border border-slate-300 p-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition";
   const disabledStyles = "disabled:bg-slate-100 disabled:cursor-not-allowed";
 
@@ -113,7 +130,7 @@ export default function AddStudentPage() {
       {error && <div className="mb-4 text-red-600 bg-red-100 p-3 rounded-lg border border-red-200">{error}</div>}
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* ... rest of your form JSX remains the same ... */}
+        {/* ... fieldsets ... */}
         <fieldset className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg">
           <legend className="text-lg font-medium px-2 text-slate-700">Basic Details</legend>
           <input name="first_name" onChange={handleChange} placeholder="First Name" className={inputStyles} required />

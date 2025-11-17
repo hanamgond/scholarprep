@@ -1,7 +1,6 @@
-// src/components/Students/StudentFormModal.tsx
-
 import { useEffect, useMemo, useState } from "react";
-import type { CreateStudentInput, UpdateStudentInput } from "../../types/student";
+// This path must be correct
+import type { CreateStudentInput, UpdateStudentInput } from "../types/student"; 
 
 type Props = {
   open: boolean;
@@ -103,6 +102,7 @@ export default function StudentFormModal({
   }
 
   // Map backend duplicate errors to specific fields (email/rollNumber)
+  // 👇 THIS IS THE FIX (was msg?:.string)
   function parseAndSetErrors(msg?: string) {
     const fe: FieldErrors = {};
     if (!msg) {

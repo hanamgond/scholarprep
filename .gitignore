@@ -50,3 +50,9 @@ logs/
 
 # Runtime data
 publish/
+
+# 👇 ADD THESE LINES
+publish_build/
+
+# Node.js
+node_modules/

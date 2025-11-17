@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomDropdown from '../../components/ui/CustomDropdown';
-import { api } from '../../api/client'; // 👈 Step 1: Import the central API client
+// 👇 FIX: Import the correct 'apiClient' from its new location
+import { apiClient as api } from '../../services/http/client';
 
 // --- Type Definitions ---
 interface Section {
@@ -43,9 +44,9 @@ export default function ClassesPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 👇 Step 2: Use the new api client
-        const response = await api.get<Class[]>('/classes');
-        const data = response.data; // Axios puts the response body in .data
+        // 👇 FIX: Add '/api' prefix
+        const response = await api.get<Class[]>('/api/classes');
+        const data = response.data;
 
         setAllClasses(data);
         if (data.length > 0) setActiveClassId(data[0].id);
@@ -98,17 +99,16 @@ export default function ClassesPage() {
     e.preventDefault();
     if (!newClassName.trim()) return;
     try {
-      const fullPayload = {
+      // The frontend payload includes fields your backend CreateClassCommand doesn't have.
+      // We send only the 'name' field, which matches your Command.
+      const payload = {
         name: newClassName,
-        tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
-        school_id: 'scl-11223344-5566-7788-9900-aabbccddeeff',
-        academic_year_id: 'acy-2025-2026',
       };
-      // 👇 Step 2: Use the new api client
-      const response = await api.post<Class>('/classes', fullPayload);
+      // 👇 FIX: Add '/api' prefix
+      const response = await api.post<Class>('/api/classes', payload);
       const newClass = response.data;
 
-      setAllClasses([...allClasses, { ...newClass, studentCount: 0, avgAccuracy: 0, sections: [] }]);
+      setAllClasses([...allClasses, newClass]); // The response DTO already has the full shape
       setNewClassName('');
       setModal(null);
     } catch (err) {
@@ -125,11 +125,16 @@ export default function ClassesPage() {
     e.preventDefault();
     if (!editingClass || !editingClass.name.trim()) return;
     try {
-      // 👇 Step 2: Use the new api client
-      const response = await api.patch<Class>(`/classes/${editingClass.id}`, { name: editingClass.name });
+      // The payload for PATCH matches your UpdateClassCommand
+      const payload = {
+        id: editingClass.id,
+        name: editingClass.name
+      };
+      // 👇 FIX: Add '/api' prefix
+      const response = await api.patch<Class>(`/api/classes/${editingClass.id}`, payload);
       const updatedClass = response.data;
 
-      setAllClasses(allClasses.map(c => c.id === editingClass.id ? { ...c, name: updatedClass.name } : c));
+      setAllClasses(allClasses.map(c => c.id === editingClass.id ? updatedClass : c));
       setEditingClass(null);
       setModal(null);
     } catch(err) {
@@ -141,13 +146,13 @@ export default function ClassesPage() {
     e.preventDefault();
     if (!newSectionName.trim() || !activeClassId) return;
     try {
+      // This payload matches your CreateSectionCommand
       const payload = {
         name: newSectionName,
         class_id: activeClassId,
-        tenant_id: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
       };
-      // 👇 Step 2: Use the new api client
-      const response = await api.post<Section>('/sections', payload);
+      // 👇 FIX: Add '/api' prefix
+      const response = await api.post<Section>('/api/sections', payload);
       const newSection = response.data;
 
       setAllClasses(allClasses.map(cls => cls.id === activeClassId ? { ...cls, sections: [...cls.sections, newSection] } : cls));

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ScholarPrep.Application.Students.Commands;
 using ScholarPrep.Application.Students.DTOs;
 using ScholarPrep.Application.Students.Queries;
@@ -41,25 +42,22 @@ public class StudentsController : ControllerBase
         return Ok(student);
     }
 
+    // --- THIS METHOD IS UPDATED ---
     [HttpPost]
-    public async Task<ActionResult<StudentDto>> CreateStudent([FromBody] CreateStudentDto createStudentDto)
+    public async Task<ActionResult<StudentDto>> CreateStudent([FromBody] CreateStudentCommand command)
     {
+        // We removed the DTO and manual mapping.
+        // The command from the frontend (which matches CreateStudentCommand) 
+        // is passed directly to the handler.
         _logger.LogInformation("Creating new student: {FirstName} {LastName}", 
-            createStudentDto.FirstName, createStudentDto.LastName);
-
-        var command = new CreateStudentCommand
-        {
-            FirstName = createStudentDto.FirstName,
-            LastName = createStudentDto.LastName,
-            Email = createStudentDto.Email,
-            Phone = createStudentDto.Phone,
-            DateOfBirth = createStudentDto.DateOfBirth,
-            CampusId = createStudentDto.CampusId
-        };
-
+            command.FirstName, command.LastName);
+            
         var student = await _mediator.Send(command);
+        
+        // Return a "201 Created" status
         return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
     }
+    // --- END OF UPDATE ---
 
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<StudentDto>> UpdateStudent(Guid id, [FromBody] UpdateStudentDto updateStudentDto)

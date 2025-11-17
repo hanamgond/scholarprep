@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+// 👇 THIS IS THE FIX
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../../api/client'; // 👈 Step 1: Import the central API client
+import { apiClient as api } from '../../services/http/client';
 
 // --- Type Definitions ---
 interface SectionDetails {
@@ -30,9 +31,8 @@ export default function SectionsPage() {
     const loadSectionData = async () => {
       try {
         setIsLoading(true);
-        // 👇 Step 2: Use the new api client to make the request
-        const response = await api.get<SectionDetails>(`/sections/${id}`);
-        setSection(response.data); // Axios provides the data in the .data property
+        const response = await api.get<SectionDetails>(`/api/sections/${id}`);
+        setSection(response.data);
       } catch (err) {
         setError('Could not load section data. The API request failed.');
         console.error(err);
@@ -59,7 +59,7 @@ export default function SectionsPage() {
 
       <div className="section-info bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <h2 className="section-title text-xl font-bold mb-2">
-          {section.class.name} - Section {section.name}
+          {section.class?.name || 'Class'} - Section {section.name}
         </h2>
         <div className="section-meta text-sm text-slate-500 flex flex-wrap gap-4">
           <span><i className="fas fa-user-tie mr-1"></i> Class Teacher: Priya Sharma (Placeholder)</span>

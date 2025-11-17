@@ -105,6 +105,9 @@ namespace Infrastructure.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("SectionId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uuid");
 
@@ -118,6 +121,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("ClassId");
 
+                    b.HasIndex("SectionId");
+
                     b.HasIndex("StudentId");
 
                     b.HasIndex("TenantId");
@@ -125,11 +130,43 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Enrollments");
                 });
 
+            modelBuilder.Entity("ScholarPrep.Domain.Entities.Section", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClassId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.ToTable("Sections");
+                });
+
             modelBuilder.Entity("ScholarPrep.Domain.Entities.Student", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
 
                     b.Property<string>("AdmissionNo")
                         .IsRequired()
@@ -150,20 +187,38 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("FatherMobile")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FatherName")
+                        .HasColumnType("text");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Gender")
+                        .HasColumnType("text");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("MotherMobile")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MotherName")
+                        .HasColumnType("text");
+
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("RollNumber")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -295,6 +350,12 @@ namespace Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ScholarPrep.Domain.Entities.Section", "Section")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ScholarPrep.Domain.Entities.Student", "Student")
                         .WithMany("Enrollments")
                         .HasForeignKey("StudentId")
@@ -309,9 +370,22 @@ namespace Infrastructure.Data.Migrations
 
                     b.Navigation("Class");
 
+                    b.Navigation("Section");
+
                     b.Navigation("Student");
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("ScholarPrep.Domain.Entities.Section", b =>
+                {
+                    b.HasOne("ScholarPrep.Domain.Entities.Class", "Class")
+                        .WithMany("Sections")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Class");
                 });
 
             modelBuilder.Entity("ScholarPrep.Domain.Entities.Student", b =>
@@ -352,6 +426,13 @@ namespace Infrastructure.Data.Migrations
                 });
 
             modelBuilder.Entity("ScholarPrep.Domain.Entities.Class", b =>
+                {
+                    b.Navigation("Enrollments");
+
+                    b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("ScholarPrep.Domain.Entities.Section", b =>
                 {
                     b.Navigation("Enrollments");
                 });

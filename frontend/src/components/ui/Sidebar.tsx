@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext"; // 1. IMPORT THE USEAUTH HOOK
 
 /** Types */
 type LinkItem = { to: string; label: string };
@@ -30,11 +31,15 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const { logout } = useAuth(); // 2. GET THE LOGOUT FUNCTION FROM THE HOOK
 
   function handleLogout() {
-    // TODO: clear auth if applicable
-    // localStorage.removeItem('token');
-    navigate("/login"); // or navigate("/dashboard") if no auth yet
+    // 3. CALL THE LOGOUT FUNCTION
+    // This will clear the token from localStorage and update the auth state
+    logout(); 
+    
+    // 4. REDIRECT THE USER TO THE LOGIN PAGE
+    navigate("/login"); 
   }
 
   return (
@@ -46,7 +51,7 @@ export default function Sidebar() {
             return (
               <button
                 key={`action-${idx}`}
-                onClick={handleLogout}
+                onClick={handleLogout} // This button now works
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm text-gray-700 hover:bg-gray-100"
               >
                 <span>{item.label}</span>
