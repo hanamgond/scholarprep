@@ -1,8 +1,9 @@
+using Application.Academic.Students.Commands;
+using Application.Academic.Students.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ScholarPrep.Application.Students.Commands;
-using ScholarPrep.Application.Students.DTOs;
-using ScholarPrep.Application.Students.Queries;
+using Application.Academic.Students.Commands;
+using Application.Academic.Students.Queries;
 
 namespace ScholarPrep.API.Controllers;
 

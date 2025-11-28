@@ -1,10 +1,25 @@
+using Application.Interface;
+using Application.Interfaces.Academic;
+using Domain.Enums.Core;
+using Infrastructure.Authorization;
+using Infrastructure.Authorization.Enrollment;
+using Infrastructure.Data.Persistence.Academic;
+using Infrastructure.Data.Persistence.Core;
+using Infrastructure.Data.Repository.Dapper;
+using Infrastructure.Data.Repository.Dapper.Academic;
+using Infrastructure.Data.Repository.Dapper.Core;
+using Infrastructure.Data.Repository.Dapper.Core.Interface;
+using Infrastructure.Data.Repository.EF.Academic;
+using Infrastructure.Data.Repository.EF.Core;
+using Infrastructure.Data.Repository.EF.Core.Interface;
+using Infrastructure.Multitenancy;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ScholarPrep.Infrastructure.Data;
-using ScholarPrep.Infrastructure.Interceptors;
-using ScholarPrep.Shared.Interfaces;
-using ScholarPrep.Infrastructure.Services; // 👈 1. ADD THIS 'using' STATEMENT
+using Microsoft.Extensions.Options;
 
 namespace ScholarPrep.Infrastructure;
 
@@ -17,21 +32,76 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         // 2. Register HttpContextAccessor to access the current request
-        services.AddHttpContextAccessor();
-        
+        services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
         // 3. Register your new TenantContext as the implementation for ITenantContext
         //    This tells the DI container what to provide when ITenantContext is requested.
         services.AddScoped<ITenantContext, TenantContext>();
 
-        // Register your interceptor (which also needs ITenantContext)
-        services.AddScoped<TenantInterceptor>();
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        services.AddDbContext<CoreDbContext>(options =>
+            options.UseNpgsql(connectionString, x => x.MigrationsHistoryTable("__EFMigrationsHistory", "core")
+                             ).UseSnakeCaseNamingConvention());
 
-        services.AddScoped<IApplicationDbContext>(provider => 
-            provider.GetRequiredService<ApplicationDbContext>());
-        
+        services.AddDbContext<AcademicDbContext>(options =>
+           options.UseNpgsql(connectionString, x => x.MigrationsHistoryTable("__EFMigrationsHistory", "academic")
+                            ).UseSnakeCaseNamingConvention());
+
+
+        // EF Repositories
+        services.AddScoped<IClassRepository, ClassRepository>();
+        services.AddScoped<ISectionRepository, SectionRepository>();
+        services.AddScoped<IStudentRepository, StudentRepository>();
+        services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+
+        //Core
+        services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<ICampusRepository, CampusRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        // Dapper Repositories
+        services.AddSingleton<IDapperConnectionFactory, DapperConnectionFactory>();
+        services.AddScoped<IClassReadRepository, ClassReadRepository>();
+        services.AddScoped<ISectionReadRepository, SectionReadRepository>();
+        services.AddScoped<IStudentReadRepository, StudentReadRepository>();
+
+        //core
+        services.AddSingleton<IDapperConnectionFactory, DapperConnectionFactory>();
+        services.AddScoped<ITenantReadRepository, TenantReadRepository>();
+        services.AddScoped<ICampusReadRepository, CampusReadRepository>();
+        services.AddScoped<IUserReadRepository, UserReadRepository>();
+
+        //Authorization
+        services.AddSingleton<IAuthorizationHandler, CampusRequirementHandler>();
+        services.AddSingleton<IAuthorizationHandler, EnrollmentReadAuthorizationHandler>();
+        services.AddSingleton<IAuthorizationHandler, EnrollmentWriteAuthorizationHandler>();
+
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("CampusMatch", p => p.RequireAuthenticatedUser().AddRequirements(new CampusRequirement()));
+            options.AddPolicy("EnrollmentRead", p =>
+            {
+                p.RequireRole(
+                    UserRole.SuperAdmin.ToString(),
+                    UserRole.TenantAdmin.ToString(),
+                    UserRole.CampusAdmin.ToString(),
+                    UserRole.Teacher.ToString()
+                );
+                p.AddRequirements(new EnrollmentReadRequirement());
+            });
+
+            options.AddPolicy("EnrollmentWrite", p =>
+            {
+                p.RequireRole(
+                    UserRole.SuperAdmin.ToString(),
+                    UserRole.TenantAdmin.ToString(),
+                    UserRole.CampusAdmin.ToString()
+                );
+                p.AddRequirements(new EnrollmentWriteRequirement());
+            });
+        });
+
+
         return services;
     }
 }

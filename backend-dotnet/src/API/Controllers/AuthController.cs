@@ -1,3 +1,7 @@
+using Application.DTO.Auth;
+using Application.Services.Auth;
+using Application.Services.Auth.Commands;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -6,41 +10,55 @@ using System.Text;
 
 namespace ScholarPrep.API.Controllers;
 
-// DTO to define what the login form will send
-public class LoginRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
-
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly IMediator _mediator;
     private readonly IConfiguration _config;
 
-    public AuthController(IConfiguration config)
+    public AuthController(IMediator mediator, IConfiguration config)
     {
+        _mediator = mediator;
         _config = config;
     }
 
     // This handles: POST /api/auth/login
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest loginRequest)
+    public async Task<IActionResult> Login([FromBody] AuthRequest req)
     {
+        var dummy = true;
         // --- THIS IS A DUMMY LOGIN ---
         // TODO: Replace this with real database user validation
-        if (loginRequest.Email == "admin@test.com" && loginRequest.Password == "password")
+        if(dummy)
         {
-            // User is valid, generate a token
-            var token = GenerateJwtToken(loginRequest.Email);
-            
-            // Return the token to the frontend
-            return Ok(new { accessToken = token });
+            if (req.Email == "admin@test.com" && req.Password == "password")
+            {
+                // User is valid, generate a token
+                var token = GenerateJwtToken(req.Email);
+
+                // Return the token to the frontend
+                return Ok(new { accessToken = token });
+            }
+
+            // User is invalid
+            return Unauthorized(new { message = "Invalid credentials" });
         }
-        
-        // User is invalid
-        return Unauthorized(new { message = "Invalid credentials" });
+        else
+        {
+            //updated code to keep for db connection
+            try
+            {
+                var resp = await _mediator.Send(new LoginCommand(req.Email, req.Password));
+                return Ok(resp);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized();
+            }
+
+        }
+            
     }
 
     private string GenerateJwtToken(string email)
