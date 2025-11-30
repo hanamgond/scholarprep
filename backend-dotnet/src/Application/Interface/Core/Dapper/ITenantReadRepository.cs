@@ -9,5 +9,6 @@ namespace Infrastructure.Data.Repository.Dapper.Core.Interface;
 
 public interface ITenantReadRepository
 {
+    Task<TenantDto?> GetByIdAsync(Guid id);
     Task<IEnumerable<TenantDto>> GetAllAsync();
 }

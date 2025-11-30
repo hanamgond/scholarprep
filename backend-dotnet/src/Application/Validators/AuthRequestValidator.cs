@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Application.Validators;
 
-public class AuthRequestValidator : AbstractValidator<AuthRequest>
+public class AuthRequestValidator : AbstractValidator<LoginRequestDto>
 {
     public AuthRequestValidator()
     {

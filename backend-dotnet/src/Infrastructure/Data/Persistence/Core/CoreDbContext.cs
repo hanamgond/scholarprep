@@ -19,6 +19,8 @@ public class CoreDbContext : DbContext
     public DbSet<Tenant> Tenants { get; set; } = null!;
     public DbSet<Campus> Campuses { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
+    public bool DisableSoftDelete { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +59,7 @@ public class CoreDbContext : DbContext
 
     private void ApplyAuditInfo()
     {
+        if (DisableSoftDelete) return;   // <-- bypass interceptor
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
             if (entry.State == EntityState.Added)

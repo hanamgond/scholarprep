@@ -1,4 +1,6 @@
 using Application.Interface;
+using Application.Interface.Core.EF;
+using Application.Interface.Security;
 using Application.Interfaces.Academic;
 using Domain.Enums.Core;
 using Infrastructure.Authorization;
@@ -12,7 +14,9 @@ using Infrastructure.Data.Repository.Dapper.Core.Interface;
 using Infrastructure.Data.Repository.EF.Academic;
 using Infrastructure.Data.Repository.EF.Core;
 using Infrastructure.Data.Repository.EF.Core.Interface;
+using Infrastructure.Helper;
 using Infrastructure.Multitenancy;
+using Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -58,12 +62,14 @@ public static class DependencyInjection
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<ICampusRepository, CampusRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         // Dapper Repositories
         services.AddSingleton<IDapperConnectionFactory, DapperConnectionFactory>();
         services.AddScoped<IClassReadRepository, ClassReadRepository>();
         services.AddScoped<ISectionReadRepository, SectionReadRepository>();
         services.AddScoped<IStudentReadRepository, StudentReadRepository>();
+        services.AddScoped<IEnrollmentReadRepository, EnrollmentReadRepository>();
 
         //core
         services.AddSingleton<IDapperConnectionFactory, DapperConnectionFactory>();
@@ -72,9 +78,14 @@ public static class DependencyInjection
         services.AddScoped<IUserReadRepository, UserReadRepository>();
 
         //Authorization
-        services.AddSingleton<IAuthorizationHandler, CampusRequirementHandler>();
-        services.AddSingleton<IAuthorizationHandler, EnrollmentReadAuthorizationHandler>();
-        services.AddSingleton<IAuthorizationHandler, EnrollmentWriteAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, CampusRequirementHandler>();
+        services.AddScoped<IAuthorizationHandler, EnrollmentReadAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, EnrollmentWriteAuthorizationHandler>();
+        services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
+
+        //Token
+        services.AddSingleton<ITokenService, TokenService>();
+
 
         services.AddAuthorization(options =>
         {

@@ -24,7 +24,7 @@ public class TenantRepository : ITenantRepository
     //Added below method just if dapper did not work properly, else remove this
     public async Task<Tenant?> GetByIdAsync(Guid id)
     {
-        return await _db.Tenants.FirstOrDefaultAsync(t => t.Id == id);
+        return await _db.Tenants.FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
     }
 
     //Added below method just if dapper did not work properly, else remove this
@@ -38,14 +38,12 @@ public class TenantRepository : ITenantRepository
         _db.Tenants.Update(entity);
         await _db.SaveChangesAsync();
     }
-
-    public async Task DeleteAsync(Guid id)
+    public async Task SoftDeleteAsync(Guid id)
     {
-        var tenant = await _db.Tenants.FindAsync(id);
-        if (tenant != null)
-        {
-            _db.Tenants.Remove(tenant);
-            await _db.SaveChangesAsync();
-        }
+        var entity = await GetByIdAsync(id);
+        if (entity == null) return;
+
+        _db.Entry(entity).State = EntityState.Deleted;
+        await _db.SaveChangesAsync();
     }
 }

@@ -16,6 +16,7 @@ public class AcademicDbContext : DbContext
     public DbSet<Section> Sections { get; set; } = null!;
     public DbSet<Student> Students { get; set; } = null!;
     public DbSet<Enrollment> Enrollments { get; set; } = null!;
+    public bool DisableSoftDelete { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +58,7 @@ public class AcademicDbContext : DbContext
 
     private void ApplyAuditInfo()
     {
+        if (DisableSoftDelete) return;   // <-- bypass interceptor
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
             if (entry.State == EntityState.Added)

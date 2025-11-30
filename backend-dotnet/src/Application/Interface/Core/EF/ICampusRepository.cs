@@ -13,6 +13,7 @@ public interface ICampusRepository
     Task<Campus?> GetByIdAsync(Guid id);
     Task<List<Campus>> GetByTenantAsync(Guid tenantId);
     Task UpdateAsync(Campus entity);
-    Task DeleteAsync(Guid id);
+    Task SoftDeleteAsync(Guid id);
+    Task HardDeleteAsync(Guid id); // For future need
 }
 

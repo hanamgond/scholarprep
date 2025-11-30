@@ -9,6 +9,7 @@ using Infrastructure.Data.Repository.EF.Core;
 using Infrastructure.Data.Repository.EF.Core.Interface;
 using Infrastructure.Multitenancy;
 using Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -41,9 +42,14 @@ builder.Services.AddControllers();
 //                .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<CreateClassDtoValidator>()); ;
 // ... (rest of your services)
 
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+builder.Services.AddAuthentication(options =>
+{
+options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
     {
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -226,4 +232,18 @@ static void AddPolicyService(AuthorizationOptions options)
     // TENANT MANAGEMENT (SuperAdmin only)
     options.AddPolicy("TenantManagement", policy =>
         policy.RequireRole(UserRole.SuperAdmin.ToString()));
+
+    // CAMPUS MODULE
+    options.AddPolicy("CampusRead", policy =>
+        policy.RequireRole(
+            UserRole.SuperAdmin.ToString(),
+            UserRole.TenantAdmin.ToString(),
+            UserRole.CampusAdmin.ToString()
+        ));
+
+    options.AddPolicy("CampusWrite", policy =>
+        policy.RequireRole(
+            UserRole.SuperAdmin.ToString(),
+            UserRole.TenantAdmin.ToString()
+        ));
 }

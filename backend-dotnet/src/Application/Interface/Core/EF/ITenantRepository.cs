@@ -7,7 +7,7 @@ public interface ITenantRepository
     Task<Tenant> AddAsync(Tenant entity);
     Task<Tenant?> GetByIdAsync(Guid id);
     Task UpdateAsync(Tenant entity);
-    Task DeleteAsync(Guid id);
+    Task SoftDeleteAsync(Guid id);
     Task<List<Tenant>> GetAllAsync();
 }
 

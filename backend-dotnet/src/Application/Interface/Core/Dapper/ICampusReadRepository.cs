@@ -4,6 +4,8 @@ namespace Infrastructure.Data.Repository.Dapper.Core.Interface;
 
 public interface ICampusReadRepository
 {
+    Task<CampusDto?> GetByIdAsync(Guid id);
     Task<IEnumerable<CampusDto>> GetByTenantAsync(Guid tenantId);
+    Task<IEnumerable<CampusDto>> GetAllAsync(Guid tenantId);
 }
 

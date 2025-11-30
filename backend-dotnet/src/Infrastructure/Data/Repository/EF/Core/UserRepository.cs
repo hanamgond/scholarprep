@@ -1,4 +1,5 @@
-﻿using Domain.Core.Entities;
+﻿using Application.Interface;
+using Domain.Core.Entities;
 using Infrastructure.Data.Persistence.Core;
 using Infrastructure.Data.Repository.EF.Core.Interface;
 using Microsoft.EntityFrameworkCore;
@@ -13,46 +14,45 @@ namespace Infrastructure.Data.Repository.EF.Core;
 public class UserRepository : IUserRepository
 {
     private readonly CoreDbContext _db;
+    private readonly ITenantContext _tenant;
+    public UserRepository(CoreDbContext db, ITenantContext tenant) { _db = db; _tenant = tenant; }
 
-    public UserRepository(CoreDbContext db)
+    public async Task<User> AddAsync(User e)
     {
-        _db = db;
-    }
-
-    public async Task<User> AddAsync(User user)
-    {
-        await _db.Users.AddAsync(user);
+        e.TenantId = _tenant.TenantId;
+        await _db.Users.AddAsync(e);
         await _db.SaveChangesAsync();
-        return user;
+        return e;
     }
 
-    //Remove if dapper work
-    public async Task<User?> GetByIdAsync(Guid id)
-    {
-        return await _db.Users
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
-    }
-    //Remove if dapper work
-    public async Task<User?> GetByEmailAsync(string email)
-    {
-        return await _db.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
-    }
+    public async Task<User?> GetByIdAsync(Guid id) =>
+        await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == _tenant.TenantId && !u.IsDeleted);
 
-    public async Task UpdateAsync(User user)
+    public async Task<User?> GetByEmailAsync(string email) =>
+        await _db.Users.FirstOrDefaultAsync(u => u.Email == email && u.TenantId == _tenant.TenantId && !u.IsDeleted);
+
+    public async Task UpdateAsync(User e) { _db.Users.Update(e); await _db.SaveChangesAsync(); }
+
+    public async Task SoftDeleteAsync(Guid id)
     {
-        _db.Users.Update(user);
+        var e = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == _tenant.TenantId);
+        if (e == null) return;
+        _db.Entry(e).State = EntityState.Deleted; // SaveChanges interceptor will soft-delete
         await _db.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task HardDeleteAsync(Guid id)
     {
-        var user = await _db.Users.FindAsync(id);
-        if (user != null)
-        {
-            _db.Users.Remove(user);
-            await _db.SaveChangesAsync();
-        }
+        var e = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == _tenant.TenantId);
+        if (e == null) return;
+        _db.Users.Remove(e);
+        await _db.SaveChangesAsync();
     }
+
+    public async Task<List<User>> GetByTenantAsync(Guid tenantId) =>
+        await _db.Users.Where(u => u.TenantId == tenantId && !u.IsDeleted).ToListAsync();
+
+    public async Task<List<User>> GetByCampusAsync(Guid campusId) =>
+        await _db.Users.Where(u => u.CampusId == campusId && !u.IsDeleted).ToListAsync();
 }
 

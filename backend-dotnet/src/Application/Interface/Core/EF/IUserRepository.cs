@@ -12,7 +12,10 @@ public interface IUserRepository
     Task<User> AddAsync(User entity);
     Task<User?> GetByIdAsync(Guid id);
     Task<User?> GetByEmailAsync(string email);
-    Task UpdateAsync(User user);
-    Task DeleteAsync(Guid id);
+    Task UpdateAsync(User entity);
+    Task SoftDeleteAsync(Guid id);
+    Task HardDeleteAsync(Guid id); // optional purge
+    Task<List<User>> GetByTenantAsync(Guid tenantId);
+    Task<List<User>> GetByCampusAsync(Guid campusId);
 }
 

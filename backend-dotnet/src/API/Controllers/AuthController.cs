@@ -1,7 +1,9 @@
 using Application.DTO.Auth;
 using Application.Services.Auth;
+using Application.Services.Auth.ChangePassword;
 using Application.Services.Auth.Commands;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,22 +17,17 @@ namespace ScholarPrep.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IConfiguration _config;
 
-    public AuthController(IMediator mediator, IConfiguration config)
-    {
-        _mediator = mediator;
-        _config = config;
-    }
+    public AuthController(IMediator mediator) => _mediator = mediator;
 
-    // This handles: POST /api/auth/login
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] AuthRequest req)
+    [AllowAnonymous]
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto req)
     {
         var dummy = true;
         // --- THIS IS A DUMMY LOGIN ---
         // TODO: Replace this with real database user validation
-        if(dummy)
+        if (dummy)
         {
             if (req.Email == "admin@test.com" && req.Password == "password")
             {
@@ -49,7 +46,7 @@ public class AuthController : ControllerBase
             //updated code to keep for db connection
             try
             {
-                var resp = await _mediator.Send(new LoginCommand(req.Email, req.Password));
+                var resp = await _mediator.Send(new LoginCommand(req));
                 return Ok(resp);
             }
             catch (UnauthorizedAccessException)
@@ -58,14 +55,37 @@ public class AuthController : ControllerBase
             }
 
         }
-            
     }
+
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto dto)
+    {
+        return Ok(await _mediator.Send(new RefreshTokenCommand(dto)));
+    }
+
+    [HttpPost("revoke")]
+    [Authorize] // user must be logged in
+    public async Task<IActionResult> Revoke([FromBody] RevokeRequestDto dto)
+    {
+        await _mediator.Send(new RevokeRefreshTokenCommand(dto));
+        return NoContent();
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        await _mediator.Send(new ChangePasswordCommand(dto));
+        return NoContent();
+    }
+
 
     private string GenerateJwtToken(string email)
     {
         // Get secret key from appsettings.json
         // WARNING: Make sure your appsettings.json has a "Jwt:Key" value!
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("LONG_SECURE_RANDOM_KEY_AT_LEAST_32_CHARS"));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         // Create claims (the token's "payload")
@@ -78,8 +98,8 @@ public class AuthController : ControllerBase
 
         // Create the token
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
+            issuer: "http://localhost:5168",
+            audience: "http://localhost:5168",
             claims: claims,
             expires: DateTime.Now.AddHours(24),
             signingCredentials: credentials);
