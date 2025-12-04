@@ -1,5 +1,7 @@
 ﻿
 
+using Domain.Enums.Core;
+
 namespace Application.DTO.Auth;
 
 public record AuthResultDto(
@@ -7,5 +9,5 @@ public record AuthResultDto(
     string RefreshToken,
     DateTime AccessTokenExpiresAt,
     DateTime RefreshTokenExpiresAt,
-    string Role
+    UserRole Role
 );

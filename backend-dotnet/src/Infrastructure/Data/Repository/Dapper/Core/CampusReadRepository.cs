@@ -3,6 +3,7 @@ using Application.Interface;
 using Application.Interfaces.Academic;
 using Dapper;
 using Infrastructure.Data.Repository.Dapper.Core.Interface;
+using static Dapper.SqlMapper;
 
 namespace Infrastructure.Data.Repository.Dapper.Core;
 
@@ -32,11 +33,11 @@ public class CampusReadRepository : ICampusReadRepository
           AND is_deleted = false
     ";
 
-    public async Task<CampusDto?> GetByIdAsync(Guid id)
+    public async Task<CampusDto?> GetByIdAsync(Guid id, Guid? tenantId = null)
     {
         using var conn = _factory.CreateConnection();
         var sql = BaseSelect + " AND id = @Id;";
-        return await conn.QueryFirstOrDefaultAsync<CampusDto>(sql, new { TenantId = _tenant.TenantId, Id = id });
+        return await conn.QueryFirstOrDefaultAsync<CampusDto>(sql, new { TenantId = tenantId ?? _tenant.TenantId, Id = id });
     }
 
     public async Task<IEnumerable<CampusDto>> GetByTenantAsync(Guid tenantId)

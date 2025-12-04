@@ -22,12 +22,17 @@ public class DeleteUserHandler : IRequestHandler<DeleteUserCommand, bool>
         if (entity == null) return false;
 
         // Tenant isolation
-        if (entity.TenantId != _tenant.TenantId)
+        if (_tenant.Role != UserRole.SuperAdmin && entity.TenantId != _tenant.TenantId)
             throw new UnauthorizedAccessException();
 
         // Campus admin restriction
         if (_tenant.Role == UserRole.CampusAdmin && entity.CampusId != _tenant.CampusId)
             throw new UnauthorizedAccessException();
+
+        //TenantAdmin restriction
+        if (_tenant.Role == UserRole.TenantAdmin && entity.TenantId != _tenant.TenantId)
+            throw new UnauthorizedAccessException();
+
 
         await _write.SoftDeleteAsync(entity.Id);
         return true;

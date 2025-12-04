@@ -23,13 +23,18 @@ public class DeleteCampusHandler : IRequestHandler<DeleteCampusCommand, bool>
         if (_tenant.Role != UserRole.SuperAdmin && _tenant.Role != UserRole.TenantAdmin)
             throw new UnauthorizedAccessException("Only SuperAdmin or TenantAdmin can delete campuses.");
 
-        var entity = await _repo.GetByIdAsync(request.CampusId);
-        if (entity == null || entity.TenantId != _tenant.TenantId) return false;
+        if (_tenant.Role == UserRole.SuperAdmin && request.tenantId is null)
+            throw new UnauthorizedAccessException("SuperAdmin should Pass correct TenantId");
+
+        var entity = await _repo.GetByIdAsync(request.CampusId, request.tenantId)
+                         ?? throw new KeyNotFoundException("Campus not found.");
+
+        if (entity.TenantId != _tenant.TenantId && _tenant.Role != UserRole.SuperAdmin) return false;
 
         // Additional check: if campus has classes/students, reject or require cascade
         // (you can implement a check here)
 
-        await _repo.SoftDeleteAsync(request.CampusId);
+        await _repo.SoftDeleteAsync(request.CampusId, request.tenantId);
         return true;
     }
 }

@@ -1,6 +1,7 @@
 ﻿namespace Application.DTO.Core;
-public record UpdateCampusDto(
+public record UpdateCampusDto(    
     string Name,
     string Address,
-    bool IsActive
+    bool IsActive,
+    Guid? TenantId = null // required when SuperAdmin updates campus
 );

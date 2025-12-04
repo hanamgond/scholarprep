@@ -66,6 +66,7 @@ public class UserController : ControllerBase
     // -------------------------------------------------------------
     [HttpPost]
     [Authorize(Policy = "UserWrite")]
+    //[AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
         var result = await _mediator.Send(new CreateUserCommand(dto));

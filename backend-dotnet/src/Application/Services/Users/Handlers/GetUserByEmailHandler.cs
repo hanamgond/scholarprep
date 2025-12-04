@@ -22,6 +22,9 @@ public class GetUserByEmailHandler : IRequestHandler<GetUserByEmailQuery, UserDt
         var dto = await _read.GetByEmailAsync(request.Email)
                   ?? throw new KeyNotFoundException("User not found");
 
+        if (_tenant.Role == UserRole.SuperAdmin)
+            return dto;
+
         if (dto.TenantId != _tenant.TenantId)
             throw new UnauthorizedAccessException();
 

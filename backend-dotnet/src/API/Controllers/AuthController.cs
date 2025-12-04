@@ -24,7 +24,7 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto req)
     {
-        var dummy = true;
+        var dummy = false;
         // --- THIS IS A DUMMY LOGIN ---
         // TODO: Replace this with real database user validation
         if (dummy)

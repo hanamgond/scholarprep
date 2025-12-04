@@ -19,23 +19,23 @@ public class UserRepository : IUserRepository
 
     public async Task<User> AddAsync(User e)
     {
-        e.TenantId = _tenant.TenantId;
+        e.TenantId = (e.TenantId == Guid.Empty) ? _tenant.TenantId : e.TenantId;
         await _db.Users.AddAsync(e);
         await _db.SaveChangesAsync();
         return e;
     }
 
     public async Task<User?> GetByIdAsync(Guid id) =>
-        await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == _tenant.TenantId && !u.IsDeleted);
+        await _db.Users.FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted);
 
     public async Task<User?> GetByEmailAsync(string email) =>
-        await _db.Users.FirstOrDefaultAsync(u => u.Email == email && u.TenantId == _tenant.TenantId && !u.IsDeleted);
+        await _db.Users.FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
 
     public async Task UpdateAsync(User e) { _db.Users.Update(e); await _db.SaveChangesAsync(); }
 
     public async Task SoftDeleteAsync(Guid id)
     {
-        var e = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == _tenant.TenantId);
+        var e = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (e == null) return;
         _db.Entry(e).State = EntityState.Deleted; // SaveChanges interceptor will soft-delete
         await _db.SaveChangesAsync();

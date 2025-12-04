@@ -31,20 +31,37 @@ public class CreateCampusHandler : IRequestHandler<CreateCampusCommand, CampusDt
 
     public async Task<CampusDto> Handle(CreateCampusCommand request, CancellationToken ct)
     {
-        if (_tenant.Role != UserRole.SuperAdmin && _tenant.Role != UserRole.TenantAdmin)
-            throw new UnauthorizedAccessException("Only SuperAdmin or TenantAdmin can create campuses.");
+        var dto = request.Dto;
+        var entity = new Campus();
 
-        // ensure tenant context matches (tenantId is set by repo)
-        var entity = new Campus
+        // SUPERADMIN — can create campus for any tenant
+        if (_tenant.Role == UserRole.SuperAdmin)
         {
-            TenantId = _tenant.TenantId,
-            Name = request.Dto.Name,
-            Address = request.Dto.Address,
-            IsActive = true
-        };
+            if (dto.TenantId is null)
+                throw new Exception("TenantId is required to create campus.");
+
+            entity.TenantId = dto.TenantId.Value;
+        }
+        // TENANTADMIN — can create campus only for their tenant
+        else if (_tenant.Role == UserRole.TenantAdmin)
+        {
+            if(dto.TenantId is not null && dto.TenantId != _tenant.TenantId)
+                throw new UnauthorizedAccessException("Campus creation is allowed only for same tenant");
+            else
+                entity.TenantId = _tenant.TenantId;
+
+        }
+        else
+        {
+            throw new UnauthorizedAccessException("Campus creation is allowed only for SuperAdmin or TenantAdmin.");
+        }
+
+        entity.Name = dto.Name;
+        entity.Address = dto.Address;
+        entity.IsActive = true;
 
         var created = await _repo.AddAsync(entity);
-        var dto = await _readRepo.GetByIdAsync(created.Id);
-        return dto ?? _mapper.Map<CampusDto>(created);
+        var campusDto = await _readRepo.GetByIdAsync(created.Id, entity.TenantId);
+        return campusDto ?? _mapper.Map<CampusDto>(created);
     }
 }

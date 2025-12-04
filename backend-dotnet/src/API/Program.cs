@@ -58,35 +58,44 @@ options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
             ),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
     });
 
-//builder.Services.AddAuthorization(options =>
-//{
-//    options.AddPolicy("SuperAdminOnly", p => p.RequireRole(UserRole.SuperAdmin.ToString()));
-//    options.AddPolicy("TenantAdminOnly", p => p.RequireRole(UserRole.TenantAdmin.ToString()));
-//    options.AddPolicy("CampusAdminOnly", p => p.RequireRole(UserRole.CampusAdmin.ToString()));
-//    options.AddPolicy("ClassRead", p => p.RequireRole("SuperAdmin", "TenantAdmin", "CampusAdmin"));
-//    options.AddPolicy("ClassWrite", p => p.RequireRole("SuperAdmin", "TenantAdmin", "CampusAdmin"));
-//    options.AddPolicy("TeacherOnly", p => p.RequireRole(UserRole.Teacher.ToString()));
-//    options.AddPolicy("StudentOnly", p => p.RequireRole(UserRole.Student.ToString()));
-//});
-
 builder.Services.AddAuthorization(options =>
 {
     AddPolicyService(options);
 });
 
-
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ScholarPrep API", Version = "v1" });
+    // JWT Bearer config for Swagger (Authorize button)
+    var bearerScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter JWT token. Example: \"Bearer {token}\"",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = "Bearer"
+        }
+    };
+
+    c.AddSecurityDefinition("Bearer", bearerScheme);
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { bearerScheme, Array.Empty<string>() }
+    });
 });
 
 builder.Services.AddApplication(); 
@@ -95,23 +104,26 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 // Authentication
 builder.Services.AddSingleton<ITokenService, TokenService>();
 
-
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ScholarPrep API v1");
+        // Serve swagger at app root so browser opens directly to it
+        options.RoutePrefix = string.Empty;
+    });
 }
 
 app.UseHttpsRedirection();
 
-// 👇 PASTE THIS LINE HERE (before UseAuthorization)
 app.UseCors(MyAllowSpecificOrigins);
-
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 app.Run();
 static void AddPolicyService(AuthorizationOptions options)
@@ -246,4 +258,21 @@ static void AddPolicyService(AuthorizationOptions options)
             UserRole.SuperAdmin.ToString(),
             UserRole.TenantAdmin.ToString()
         ));
+
+    //User Module
+    options.AddPolicy("UserWrite", policy =>
+        policy.RequireRole(
+            UserRole.SuperAdmin.ToString(),
+            UserRole.TenantAdmin.ToString(),
+            UserRole.CampusAdmin.ToString()
+        ));
+    
+    options.AddPolicy("UserRead", policy =>
+        policy.RequireRole(
+            UserRole.SuperAdmin.ToString(),
+            UserRole.TenantAdmin.ToString(),
+            UserRole.CampusAdmin.ToString()
+        ));
+
 }
+

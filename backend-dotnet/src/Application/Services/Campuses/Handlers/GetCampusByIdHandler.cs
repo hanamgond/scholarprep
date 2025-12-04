@@ -20,10 +20,10 @@ public class GetCampusByIdHandler : IRequestHandler<GetCampusByIdQuery, CampusDt
 
     public async Task<CampusDto> Handle(GetCampusByIdQuery request, CancellationToken ct)
     {
-        var dto = await _read.GetByIdAsync(request.CampusId)
+        var dto = await _read.GetByIdAsync(request.CampusId, request.TenantId)
                   ?? throw new KeyNotFoundException("Campus not found.");
 
-        if (dto.TenantId != _tenant.TenantId)
+        if (dto.TenantId != _tenant.TenantId && _tenant.Role != UserRole.SuperAdmin)
             throw new UnauthorizedAccessException("Tenant mismatch.");
 
         // CampusAdmin allowed to read only their campus:

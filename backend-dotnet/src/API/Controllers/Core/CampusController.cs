@@ -58,9 +58,9 @@ public class CampusController : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "CampusWrite")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, Guid? tenantId = null)
     {
-        var deleted = await _mediator.Send(new DeleteCampusCommand(id));
+        var deleted = await _mediator.Send(new DeleteCampusCommand(id, tenantId));
         if (!deleted) return NotFound();
         return NoContent();
     }

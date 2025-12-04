@@ -1,4 +1,5 @@
 ﻿using Application.DTO.Core;
+using Domain.Core.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

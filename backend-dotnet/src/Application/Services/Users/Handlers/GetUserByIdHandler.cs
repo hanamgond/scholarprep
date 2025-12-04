@@ -22,6 +22,9 @@ public class GetUserByIdHandler : IRequestHandler<GetUserByIdQuery, UserDto>
         var dto = await _read.GetByIdAsync(request.UserId)
                   ?? throw new KeyNotFoundException("User not found");
 
+        if (_tenant.Role == UserRole.SuperAdmin)
+            return dto;
+
         if (dto.TenantId != _tenant.TenantId)
             throw new UnauthorizedAccessException();
 

@@ -2,6 +2,7 @@
 using Application.Interface;
 using Application.Services.Campuses.Commands;
 using AutoMapper;
+using Domain.Core.Entities;
 using Domain.Enums.Core;
 using Infrastructure.Data.Repository.Dapper.Core.Interface;
 using Infrastructure.Data.Repository.EF.Core.Interface;
@@ -29,10 +30,13 @@ public class UpdateCampusHandler : IRequestHandler<UpdateCampusCommand, CampusDt
         if (_tenant.Role != UserRole.SuperAdmin && _tenant.Role != UserRole.TenantAdmin)
             throw new UnauthorizedAccessException("Only SuperAdmin or TenantAdmin can update campuses.");
 
-        var entity = await _repo.GetByIdAsync(request.CampusId)
-                     ?? throw new KeyNotFoundException("Campus not found.");
+        if(_tenant.Role == UserRole.SuperAdmin && request.Dto.TenantId is null)
+            throw new UnauthorizedAccessException("SuperAdmin should Pass correct TenantId");
 
-        if (entity.TenantId != _tenant.TenantId)
+           var entity = await _repo.GetByIdAsync(request.CampusId, request.Dto.TenantId)
+                         ?? throw new KeyNotFoundException("Campus not found.");
+
+        if (entity.TenantId != _tenant.TenantId && _tenant.Role != UserRole.SuperAdmin)
             throw new UnauthorizedAccessException("Tenant mismatch.");
 
         // update fields
@@ -42,6 +46,6 @@ public class UpdateCampusHandler : IRequestHandler<UpdateCampusCommand, CampusDt
 
         await _repo.UpdateAsync(entity);
 
-        return await _readRepo.GetByIdAsync(entity.Id) ?? _mapper.Map<CampusDto>(entity);
+        return await _readRepo.GetByIdAsync(entity.Id, entity.TenantId) ?? _mapper.Map<CampusDto>(entity);
     }
 }

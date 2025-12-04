@@ -1,4 +1,5 @@
 ﻿using Domain.Core.Entities;
+using Domain.Enums.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -26,7 +27,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => new { u.TenantId, u.Email }).IsUnique();
         builder.Property(u => u.Role)
-               .HasConversion<int>()    // store enum as int
+               .HasConversion<string>()    // store enum as int
                .IsRequired();
     }
 }

@@ -26,6 +26,10 @@ public class UpdateUserHandler : IRequestHandler<UpdateUserCommand, UserDto>
                      ?? throw new KeyNotFoundException("User not found");
 
         // ---- Permissions ----
+        if (_tenant.Role == UserRole.TenantAdmin && entity.TenantId != _tenant.TenantId)
+            throw new UnauthorizedAccessException();
+
+
         if (_tenant.Role is UserRole.Teacher or UserRole.Student)
             throw new UnauthorizedAccessException();
 

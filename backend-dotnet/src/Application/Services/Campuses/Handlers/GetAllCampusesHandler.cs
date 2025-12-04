@@ -20,6 +20,9 @@ public class GetAllCampusesHandler : IRequestHandler<GetAllCampusesQuery, List<C
 
     public async Task<List<CampusDto>> Handle(GetAllCampusesQuery request, CancellationToken ct)
     {
+        if(_tenant.Role == UserRole.SuperAdmin)
+            throw new UnauthorizedAccessException("Access denied, SuperAdmin should use GetAllCampusesBy TenantId");
+
         var list = await _read.GetAllAsync(_tenant.TenantId);
         if (_tenant.Role == UserRole.CampusAdmin)
             list = list.Where(c => c.Id == _tenant.CampusId).ToList();

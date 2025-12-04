@@ -19,7 +19,11 @@ public class GetUsersByTenantHandler : IRequestHandler<GetUsersByTenantQuery, Li
 
     public async Task<List<UserDto>> Handle(GetUsersByTenantQuery request, CancellationToken ct)
     {
-        var list = await _read.GetByTenantAsync(_tenant.TenantId);
+        var tenantIdToQuery = _tenant.Role == UserRole.SuperAdmin
+                                 ? (request.TenantId ?? throw new Exception("SuperAdmin Must pass TenantId"))
+                                 : _tenant.TenantId;
+
+        var list = await _read.GetByTenantAsync(tenantIdToQuery);
 
         if (_tenant.Role == UserRole.CampusAdmin)
             list = list.Where(x => x.CampusId == _tenant.CampusId);

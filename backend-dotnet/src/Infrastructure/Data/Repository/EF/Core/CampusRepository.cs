@@ -24,20 +24,16 @@ public class CampusRepository : ICampusRepository
 
     public async Task<Campus> AddAsync(Campus entity)
     {
-        // tenant and audit will be set by SaveChanges interceptor
-        entity.TenantId = _tenant.TenantId;
-        entity.IsActive = true;
-
         await _db.Campuses.AddAsync(entity);
         await _db.SaveChangesAsync();
         return entity;
     }
 
-    public async Task<Campus?> GetByIdAsync(Guid id)
+    public async Task<Campus?> GetByIdAsync(Guid id, Guid? tenantId = null)
     {
         return await _db.Campuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == _tenant.TenantId && !c.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == (tenantId ?? _tenant.TenantId) && !c.IsDeleted);
     }
 
     public async Task<List<Campus>> GetByTenantAsync(Guid tenantId)
@@ -55,10 +51,10 @@ public class CampusRepository : ICampusRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task SoftDeleteAsync(Guid id)
+    public async Task SoftDeleteAsync(Guid id, Guid? tenantId)
     {
         var entity = await _db.Campuses
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == _tenant.TenantId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == (tenantId ?? _tenant.TenantId));
         if (entity == null) return;
 
         // SaveChanges override will set IsDeleted when state becomes Deleted,
@@ -67,10 +63,10 @@ public class CampusRepository : ICampusRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task HardDeleteAsync(Guid id)
+    public async Task HardDeleteAsync(Guid id, Guid? tenantId)
     {
         var entity = await _db.Campuses
-            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == _tenant.TenantId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.TenantId == (tenantId ?? _tenant.TenantId));
         if (entity == null) return;
 
         _db.DisableSoftDelete = true;
