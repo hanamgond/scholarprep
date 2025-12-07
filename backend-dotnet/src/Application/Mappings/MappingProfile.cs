@@ -88,6 +88,20 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StudentStatus.Active));
 
+        CreateMap<UpdateStudentDto, Student>()
+           .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
+           .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
+           .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+           .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone))
+           .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => src.DateOfBirth))
+           .ForMember(dest => dest.RollNumber, opt => opt.MapFrom(src => src.RollNumber))
+           .ForMember(dest => dest.Gender, opt => opt.MapFrom(src => src.Gender))
+           .ForMember(dest => dest.FatherName, opt => opt.MapFrom(src => src.FatherName))
+           .ForMember(dest => dest.FatherMobile, opt => opt.MapFrom(src => src.FatherMobile))
+           .ForMember(dest => dest.MotherName, opt => opt.MapFrom(src => src.MotherName))
+           .ForMember(dest => dest.MotherMobile, opt => opt.MapFrom(src => src.MotherMobile))
+           .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address))
+           .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => StudentStatus.Active));
 
         // --------------------------
         // ENROLLMENT MAPPINGS

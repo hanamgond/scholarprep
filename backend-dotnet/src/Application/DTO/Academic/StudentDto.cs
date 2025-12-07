@@ -24,5 +24,12 @@ public record StudentDto(
     DateTime? UpdatedAt,
     Guid CreatedBy,
     Guid? UpdatedBy
-);
+)
+{
+    public StudentDto(): this(default, default, default, default, default, default, default, default, default, default, default, default, default, default, default,
+        default,default, default, default, default, default, default, default)
+    {
+
+    }
+}
 

@@ -42,9 +42,6 @@ public class LoginHandler : IRequestHandler<LoginCommand, AuthResultDto>
         var user = await _userRead.GetByEmailAsync(dto.Email.ToLowerInvariant())
                    ?? throw new UnauthorizedAccessException("Invalid credentials");
 
-        if (_tenant.TenantId != Guid.Empty && user.TenantId != _tenant.TenantId)
-            throw new UnauthorizedAccessException("Invalid tenant");
-
         var userEntity = await _userWrite.GetByIdAsync(user.Id)
                          ?? throw new UnauthorizedAccessException("Invalid account");
 

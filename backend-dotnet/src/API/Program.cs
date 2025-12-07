@@ -1,12 +1,14 @@
 using Application.Interface.Security;
 using Application.Services.Auth;
 using Application.Validators;
+using Dapper;
 using Domain.Enums.Core;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Infrastructure.Authorization;
 using Infrastructure.Data.Repository.EF.Core;
 using Infrastructure.Data.Repository.EF.Core.Interface;
+using Infrastructure.Helper;
 using Infrastructure.Multitenancy;
 using Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -97,7 +99,7 @@ builder.Services.AddSwaggerGen(c =>
         { bearerScheme, Array.Empty<string>() }
     });
 });
-
+SqlMapper.AddTypeHandler(new DateOnlyHandler());
 builder.Services.AddApplication(); 
 builder.Services.AddInfrastructureServices(builder.Configuration);
 

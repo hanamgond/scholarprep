@@ -26,7 +26,6 @@ public class CreateStudentHandler : IRequestHandler<CreateStudentCommand, Studen
     public async Task<StudentDto> Handle(CreateStudentCommand request, CancellationToken cancellationToken)
     {
         var dto = request.Dto;
-
         // Campus Admin cannot create student in another campus
         if (_tenant.Role == UserRole.CampusAdmin &&
             _tenant.CampusId != _tenant.CampusId)
@@ -35,7 +34,7 @@ public class CreateStudentHandler : IRequestHandler<CreateStudentCommand, Studen
         }
 
         var entity = _mapper.Map<Student>(dto);
-
+            
         entity.TenantId = _tenant.TenantId;
         entity.CampusId = _tenant.CampusId;
         entity.CreatedBy = _tenant.UserId;
