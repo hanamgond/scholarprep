@@ -1,64 +1,79 @@
 import { apiClient } from '@/services/http/client';
-// 1. This import is now correct
-import type { Student, StudentListItem, StudentCreatePayload } from '../types/student';
+import type { Student, StudentCreatePayload, StudentListItem } from '../types/student';
 
-/**
- * 2. THIS FUNCTION WAS MISSING
- * This "translator" function takes the backend 'Student' object
- * and converts it into the 'StudentListItem' object that your
- * UI components (like Overview.tsx) expect.
- */
-export function mapStudentToListItem(student: Student): StudentListItem {
-  return {
-    // Direct Mappings
-    id: student.id,
-    admission_no: student.admissionNo,
-
-    // Transformed/Created Data
-    name: `${student.firstName} ${student.lastName}`,
-    avatarUrl: `https://i.pravatar.cc/48?u=${student.id}`, // Generates a placeholder avatar
-
-    // "Hidden" Data (set to defaults)
-    // Your UI expects these, but the new API doesn't have them yet.
-    className: "Class TBD", // Placeholder
-    sectionName: "Section TBD", // Placeholder
-    track: "Track TBD", // Placeholder
-    rank: 0,
-    metrics: {
-      accuracyPct: 0,
-      accuracyDelta: 0,
-      qpm: 0,
-      qpmDelta: 0,
-      consistencyPct: 0,
-      consistencyDelta: 0,
-    },
-  };
-}
-
-
-// This service object holds all your student-related API calls
 export const studentsService = {
-  
-  getAll: async (): Promise<Student[]> => {
+  async getAll(page: number = 1, pageSize: number = 10): Promise<{
+    items: Student[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
     try {
-      const { data } = await apiClient.get<Student[]>('/api/Students');
-      return data;
+      const { data } = await apiClient.get(`/api/students?page=${page}&pageSize=${pageSize}`);
+      
+      console.log('📡 Students API Response:', data);
+      
+      // Handle different response formats
+      if (Array.isArray(data)) {
+        // If backend returns just an array (fallback)
+        return {
+          items: data,
+          totalCount: data.length,
+          page,
+          pageSize,
+          totalPages: Math.ceil(data.length / pageSize),
+        };
+      } else if (data && data.items) {
+        // If backend returns the expected paginated format
+        return data;
+      } else {
+        // Fallback for unexpected format
+        console.warn('Unexpected API response format:', data);
+        return {
+          items: [],
+          totalCount: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
     } catch (error) {
       console.error('Failed to fetch students:', error);
       throw error;
     }
   },
 
-  create: async (studentData: StudentCreatePayload): Promise<Student> => {
+  async create(studentData: StudentCreatePayload): Promise<Student> {
+    const { data } = await apiClient.post<Student>('/api/students', studentData);
+    return data;
+  },
+
+  getById: async (id: string): Promise<Student> => {
     try {
-      // Calls: POST http://localhost:5168/api/Students
-      const { data } = await apiClient.post<Student>('/api/Students', studentData);
+      const { data } = await apiClient.get<Student>(`/api/students/${id}`);
       return data;
     } catch (error) {
-      console.error('Failed to create student:', error);
+      console.error(`Failed to fetch student ${id}:`, error);
       throw error;
     }
   },
-  
-  // ... other methods like getById, update, delete will go here
 };
+
+export function mapStudentToListItem(student: Student): StudentListItem {
+  return {
+    id: student.id,
+    name: `${student.firstName} ${student.lastName}`.trim(),
+    avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstName + ' ' + student.lastName)}&background=random`,
+    admission_no: student.admissionNo,
+    className: student.className || 'N/A',
+    sectionName: student.sectionName || 'N/A',
+    track: 'Beginner', // Default value
+    rank: 1, // Default value
+    metrics: {
+      accuracyPct: 75, // Default value
+      qpm: 45, // Default value
+      consistencyPct: 80, // Default value
+    },
+  };
+}

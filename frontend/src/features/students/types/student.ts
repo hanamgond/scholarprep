@@ -1,6 +1,7 @@
 // --- This is the new API data ---
 // This interface MUST match your .NET StudentDto
 export interface Student {
+  // Core Fields (From Backend)
   id: string;
   firstName: string;
   lastName: string;
@@ -12,6 +13,28 @@ export interface Student {
   campusName: string;
   createdAt: string;
   updatedAt: string;
+  
+  // Derived Fields (From Joins)
+  className?: string;
+  sectionName?: string;
+
+  // Extended Details (Optional - might be null in DB)
+  rollNumber?: string;
+  gender?: string;
+  fatherName?: string;
+  motherName?: string;
+  address?: string;
+  
+  // Note: The UI uses 'contactNumber' for the parent's phone in the details view
+  contactNumber?: string; 
+
+  // Dashboard/Performance Stats (Optional / Calculated)
+  rank?: number;
+  accuracyPercent?: number;
+  questionsPerMinute?: number;
+  
+  // Old fields (kept for compatibility if needed, or can be removed later)
+  track?: string;
 }
 
 // --- This is what your UI components expect ---
@@ -44,6 +67,8 @@ export interface StudentCreatePayload {
   email: string;
   phone: string;
   dateOfBirth: string; // ISO string
+  sectionId: string; 
+
   rollNumber?: string;
   gender?: string;
   fatherName?: string;
@@ -51,10 +76,7 @@ export interface StudentCreatePayload {
   address?: string;
 }
 
-// --- 👇 ADD THESE TWO MISSING TYPES ---
-
-// This is the type your 'StudentFormModal' expects.
-// It uses the old field names from your original frontend.
+// --- For the Modal ---
 export interface CreateStudentInput {
   name: string;
   admission_no: string;
@@ -70,5 +92,4 @@ export interface CreateStudentInput {
   gender: string;
 }
 
-// This is the update type your 'StudentFormModal' expects
 export type UpdateStudentInput = Partial<CreateStudentInput>;

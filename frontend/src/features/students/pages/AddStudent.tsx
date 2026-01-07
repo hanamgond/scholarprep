@@ -103,6 +103,7 @@ export default function AddStudentPage() {
       motherName: formData.mother_name || undefined,
       campusId: '00000000-0000-0000-0000-000000000000', // TODO: Get from context
       admissionNo: `ADM-${Date.now()}`, // TODO: Get from form
+      sectionId: formData.section_id
     };
 
     try {
