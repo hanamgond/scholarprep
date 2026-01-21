@@ -1,5 +1,6 @@
+using Domain.Academic.Entities;
+using Domain.Core.Entities;
 using Microsoft.EntityFrameworkCore;
-using ScholarPrep.Domain.Entities; // This links to the Domain project
 // This links to the EF Core package
 
 namespace ScholarPrep.Shared.Interfaces;
