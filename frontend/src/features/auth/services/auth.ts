@@ -1,39 +1,26 @@
-import { apiClient } from '../../../services/http/client';
+// features/auth/services/auth.ts
+import axios from "axios";
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+});
 
-export interface LoginResponse {
-  accessToken: string;
-}
-
-// REMOVED: Unused 'DecodedToken' interface.
-// It will be moved to AuthContext.tsx where it's actually used.
-
-class AuthService {
-  async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>('/api/auth/login', {
-      email,
-      password,
-    });
-    return response.data;
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  // REMOVED: Unused 'register' stub to fix linting errors.
-  /*
-  async register(userData: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    tenantName: string;
-  }) {
-    const response = await apiClient.post('/auth/register', userData);
-    return response.data;
-  }
-  */
-}
+export const authService = {
+  login: async (email: string, password: string) => {
+    const res = await api.post("/auth/login", { email, password });
+    return res.data;
+  },
 
-export const authService = new AuthService();
+  me: async () => {
+    const res = await api.get("/users/me");
+    return res.data;
+  },
+};

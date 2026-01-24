@@ -14,7 +14,7 @@ import StudentDetails from './features/students/pages/StudentDetails';
 
 // --- CLASSES MODULE ---
 import ClassesPage from "./features/classes/pages";
-import SectionDetail from "./features/classes/pages/SectionDetail"; 
+import SectionDetail from "./features/classes/pages/SectionDetail";
 
 // --- QUESTIONS MODULE ---
 import CreateQuestion from './features/questions/pages/CreateQuestion';
@@ -30,7 +30,7 @@ import StaffLayout from './features/staff/layouts/StaffLayout';
 import StaffDirectory from './features/staff/pages/StaffDirectory';
 import AddStaff from './features/staff/pages/AddStaff';
 import StaffProfile from './features/staff/pages/StaffProfile';
-import StaffAttendance from './features/staff/pages/StaffAttendance'; 
+import StaffAttendance from './features/staff/pages/StaffAttendance';
 import LeaveManagement from './features/staff/pages/LeaveManagement';
 
 // --- DEPARTMENTS MODULE ---
@@ -53,6 +53,8 @@ import LoginPage from './pages/Login';
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
+  console.log("HI auth", user?.role)
+
 
   if (isLoading) {
     return (
@@ -89,6 +91,8 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function AppRoutes() {
+
+
   return (
     <BrowserRouter>
       <Routes>
@@ -108,18 +112,21 @@ function AppRoutes() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
 
+
+
+
           {/* Students Module */}
           <Route path="students" element={<StudentsModulePage />}>
-            <Route index element={<Overview />} /> 
+            <Route index element={<Overview />} />
             <Route path="overview" element={<Overview />} />
             <Route path="add" element={<AddStudentPage />} />
             <Route path="bulk-create" element={<BulkCreatePage />} />
             <Route path="bulk-edit" element={<BulkEditPage />} />
           </Route>
-          
+
           {/* Student Details */}
           <Route path="students/:id" element={<StudentDetails />} />
-          
+
           {/* Questions Module */}
           <Route path="questions" element={<QuestionBank />} />
           <Route path="questions/create" element={<CreateQuestion />} />
@@ -138,6 +145,10 @@ function AppRoutes() {
             <Route index element={<AttendanceDashboard />} />
             <Route path=":classId" element={<MarkAttendance />} />
           </Route>
+
+
+
+
 
           {/* STAFF MODULE */}
           <Route path="staff" element={<StaffLayout />}>
@@ -159,26 +170,26 @@ function AppRoutes() {
           <Route path="settings" element={<SettingsLayout />}>
             {/* Redirect /settings to /settings/general by default */}
             <Route index element={<Navigate to="general" replace />} />
-            
+
             {/* 1. General Settings (Placeholder) */}
             <Route path="general" element={<div className="p-10 text-gray-500">General Settings Coming Soon...</div>} />
-            
+
             {/* 2. Access Control (Connected) */}
             <Route path="access-control" element={<AccessControlSettings />} />
-            
+
             {/* 3. Academic (Placeholder) */}
             <Route path="academic" element={<div className="p-10 text-gray-500">Academic Settings Coming Soon...</div>} />
-            
+
             {/* 4. Data (Placeholder) */}
             <Route path="data" element={<div className="p-10 text-gray-500">Data Management Coming Soon...</div>} />
           </Route>
-        
+
         </Route>
 
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 }
 
@@ -187,7 +198,7 @@ export default function App() {
     <AuthProvider>
       {/* REQUIRED: Toaster for Notifications */}
       <Toaster position="top-right" />
-      
+
       {/* Temporary: Show connection test */}
       <div className="fixed top-4 right-4 z-50 max-w-md">
         <ConnectionTest />

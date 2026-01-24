@@ -1,12 +1,12 @@
-import axios from 'axios';
+import axios from "axios";
 
 // Your .NET backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5168';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 15_000,
 });
@@ -16,19 +16,19 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // 1. Get the token from local storage
-    const token = localStorage.getItem('accessToken');
-    
+    const token = localStorage.getItem("accessToken");
+
     // 2. If the token exists, add it to the 'Authorization' header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config; // Continue with the request
   },
   (error) => {
     // This handles errors *before* the request is sent
     return Promise.reject(error);
-  }
+  },
 );
 // --- 👆 END OF FIX 👆 ---
 
@@ -38,9 +38,9 @@ apiClient.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // If the token is invalid, log the user out
-      localStorage.removeItem('accessToken');
-      window.location.href = '/login';
+      localStorage.removeItem("accessToken");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
